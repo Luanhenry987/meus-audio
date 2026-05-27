@@ -1,5 +1,4 @@
 const { Peer } = require('peerjs');
-const wrtc = require('wrtc'); // Simula o navegador para o PeerJS funcionar no Node
 const express = require('express');
 
 // ==========================================
@@ -34,6 +33,80 @@ let otherPlayers = {};
 let hostLoop = null;
 
 // Você pode definir o código fixo aqui ou via Variável de Ambiente no Render
+const roomCode = process.env.ROOM_CODE || "MDZ-1234";
+
+console.log(`[SISTEMA] Inicializando PeerJS com código: ${roomCode}...`);
+
+const peer = new Peer(roomCode);
+
+peer.on('open', (id) => {
+    console.log(`[SUCESSO] Servidor aberto! Código da Sala: ${id}`);
+    startHostLoop();
+});
+
+peer.on('connection', (conn) => {
+    console.log(`[INFO] Novo jogador conectando: ${conn.peer}`);
+    
+    // Limite de jogadores
+    if (peerConnections.length >= 11) {
+        console.log(`[AVISO] Conexão recusada (Servidor Cheio): ${conn.peer}`);
+        conn.close();
+        return;
+    }
+
+    peerConnections.push(conn);
+    console.log(`[INFO] Total de jogadores: ${peerConnections.length}`);
+
+    conn.on('open', () => {
+        console.log(`[SUCESSO] Jogador entrou no mundo: ${conn.peer}`);
+        conn.send({ type: 'world_sync', houses: [], tents: [], campfires: [], drops: [] });
+    });
+
+    conn.on('data', (data) => {
+        if (data.type === 'player_update') {
+            otherPlayers[conn.peer] = data.player;
+        } 
+        else if (data.type === 'route_damage') {
+            let targetConn = peerConnections.find(c => c.peer === data.target);
+            if (targetConn) targetConn.send({ type: 'take_damage', amount: data.amount });
+            console.log(`[COMBATE] Repassando dano de ${conn.peer} para ${data.target}`);
+        }
+    });
+
+    conn.on('close', () => {
+        console.log(`[AVISO] Jogador desconectou: ${conn.peer}`);
+        peerConnections = peerConnections.filter(c => c.peer !== conn.peer);
+        delete otherPlayers[conn.peer];
+        console.log(`[INFO] Total de jogadores: ${peerConnections.length}`);
+    });
+});
+
+peer.on('error', (err) => {
+    console.error(`[ERRO PEERJS] ${err.type} - ${err.message}`);
+});
+
+// Loop de Atualização do Servidor (20 ticks por segundo)
+function startHostLoop() {
+    if(hostLoop) clearInterval(hostLoop);
+    
+    console.log("[SISTEMA] Loop do servidor iniciado (20 ticks/s).");
+    
+    hostLoop = setInterval(() => {
+        otherPlayers['HOST'] = botPlayer;
+
+        let hostPayload = {
+            type: 'host_update', 
+            players: otherPlayers,
+            zombies: [],
+            drops: [],
+            shots: []
+        };
+
+        peerConnections.forEach(c => {
+            if(c.open) c.send(hostPayload);
+        });
+    }, 50);
+}
 const roomCode = process.env.ROOM_CODE || "MDZ-1234";
 
 console.log(`[SISTEMA] Inicializando PeerJS com código: ${roomCode}...`);
