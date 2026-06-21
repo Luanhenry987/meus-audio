@@ -1,267 +1,2137 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Madness Z - Dedicated Server Bot</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lag & Desespero</title>
+    <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+       <style>
+        /* Emojis & Sistema de Resposta */
+        .emoji-picker { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; height: 100%; min-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; padding-right: 5px; border-radius: 0 0 12px 12px; border-top: 1px solid var(--bg-tertiary); }
+        .emoji-picker::-webkit-scrollbar { width: 5px; }
+        .emoji-picker::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 5px; }
 
-        body {
-            background-color: #050505;
-            color: #00ff00;
-            font-family: 'Share Tech Mono', monospace;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .container {
-            background: #111;
-            border: 2px solid #333;
-            border-radius: 8px;
-            padding: 20px;
-            width: 100%;
-            max-width: 600px;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
-        }
-
-        h1 {
-            color: #fff;
-            text-align: center;
-            margin-top: 0;
-            text-shadow: 0 0 10px #00ff00;
-        }
-
-        .status-panel {
-            background: #000;
-            border: 1px solid #00ff00;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 18px;
-        }
-
-        #status-text { font-weight: bold; color: #ff3333; }
-        #room-code-display { font-size: 24px; color: #00ffff; margin-top: 10px; display: block;}
-
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            justify-content: center;
-        }
-
-        input {
-            background: #222;
-            border: 1px solid #555;
-            color: #fff;
-            padding: 10px;
-            font-family: inherit;
-            font-size: 16px;
-            text-transform: uppercase;
-            outline: none;
-        }
-
-        input:focus { border-color: #00ff00; }
-
-        button {
-            background: #003300;
-            color: #00ff00;
-            border: 1px solid #00ff00;
-            padding: 10px 20px;
-            font-family: inherit;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.2s;
-            text-transform: uppercase;
-        }
-
-        button:hover { background: #00ff00; color: #000; }
-        button:disabled { background: #333; color: #777; border-color: #555; cursor: not-allowed; }
-
-        .log-console {
-            background: #000;
-            border: 1px solid #333;
-            height: 300px;
-            overflow-y: auto;
-            padding: 10px;
-            font-size: 12px;
-            color: #aaa;
-        }
-
-        .log-entry { margin-bottom: 4px; border-bottom: 1px dashed #222; padding-bottom: 2px; }
-        .log-time { color: #555; }
-        .log-info { color: #00ffff; }
-        .log-success { color: #00ff00; }
-        .log-warn { color: #ffaa00; }
+        .emoji-btn { background: none; border: none; font-size: 2rem; cursor: pointer; transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); padding: 5px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+        .emoji-btn:hover { transform: scale(1.2) rotate(5deg); background: rgba(255,255,255,0.05); }
+        .emoji-btn.selected { background: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); }
         
-        .players-list {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #fff;
+        .reply-bar { display: none; background: var(--bg-secondary); padding: 10px 20px; border-top: 1px solid var(--bg-tertiary); align-items: center; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); }
+        .reply-bar.active { display: flex; }
+        .reply-bar .close-reply { cursor: pointer; color: white; font-weight: bold; font-size: 1.2rem; transition: 0.2s; }
+        .reply-bar .close-reply:hover { color: #ff5252; transform: scale(1.1); }
+        
+        .message-reply-context { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; padding-left: 25px; position: relative; cursor: pointer; max-width: 90%; }
+        .message-reply-context::before { content: ''; position: absolute; left: 10px; top: 50%; width: 12px; height: 12px; border-left: 2px solid #4f545c; border-top: 2px solid #4f545c; border-top-left-radius: 6px; transform: translateY(-50%); }
+        .message-reply-context img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
+        .message-reply-context strong { color: var(--text-normal); white-space: nowrap; }
+        .message-reply-context span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .reply-btn { background: var(--bg-tertiary); border: none; color: var(--text-muted); cursor: pointer; opacity: 0; transition: 0.2s; font-size: 1.2rem; padding: 4px 8px; border-radius: 4px; margin-left: auto; }
+        .message:hover .reply-btn { opacity: 1; }
+        .reply-btn:hover { color: white; background: var(--accent-color); }
+
+    </style>
+    
+    <style>
+              :root {
+            --bg-primary: #1e2420; /* Tom floresta escuro - Terraria Night */
+            --bg-secondary: #161a17;
+            --bg-tertiary: #0d100e;
+            --text-normal: #e0e0e0;
+            --text-muted: #84948a;
+            --accent-color: #4CAF50; /* Verde folha Terraria */
+            --accent-hover: #388E3C;
+            --terraria-gold: #FFD700;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        body { background-color: var(--bg-primary); color: var(--text-normal); overflow: hidden; height: 100dvh; display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom); background-image: radial-gradient(circle at center, #272e29 0%, #1e2420 100%); transition: background 0.3s ease; }
+
+        .screen { display: none; height: 100%; width: 100%; }
+        .screen.active { display: flex; }
+
+        /* Animações mais fluidas e elásticas */
+        .fade-in { animation: fadeIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .slide-up { animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Menu de Contexto estilo Discord (Mobile) */
+        .context-menu-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; opacity: 0; transition: opacity 0.3s ease; backdrop-filter: blur(4px); }
+        .context-menu-overlay.active { display: block; opacity: 1; }
+        .context-sheet { position: absolute; bottom: -100%; left: 0; width: 100%; background: var(--bg-secondary); border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 25px 15px; transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 -10px 30px rgba(0,0,0,0.8); border-top: 2px solid var(--bg-tertiary); }
+        .context-menu-overlay.active .context-sheet { bottom: 0; }
+        .context-btn { display: flex; align-items: center; gap: 15px; width: 100%; padding: 16px; background: none; border: none; color: white; font-size: 1.1rem; cursor: pointer; border-radius: 12px; transition: 0.2s; font-weight: 500; }
+        .context-btn:active { background: rgba(255,255,255,0.05); transform: scale(0.97); }
+        .context-btn:hover { background: var(--bg-tertiary); }
+        .context-btn.delete { color: #ff5252; }
+        .context-btn.delete:hover { background: rgba(255, 82, 82, 0.1); }
+        .context-btn i { font-size: 1.6rem; width: 24px; text-align: center; }
+        
+        /* Efeito de edição */
+        .editing-pulse { animation: pulseBorder 1.5s infinite; border: 2px solid var(--terraria-gold) !important; box-shadow: 0 0 15px rgba(255, 215, 0, 0.3) !important; }
+        @keyframes pulseBorder { 0% { border-color: rgba(255, 215, 0, 1); } 50% { border-color: rgba(255, 215, 0, 0.5); } 100% { border-color: rgba(255, 215, 0, 1); } }
+        
+        /* CANAIS DE VOZ E CATEGORIAS */
+        .category-title { font-size: 0.75rem; font-weight: bold; color: var(--text-muted); padding: 0 12px; margin-bottom: 6px; margin-top: 18px; text-transform: uppercase; letter-spacing: 1.5px; text-shadow: 1px 1px 0px rgba(0,0,0,0.5); }
+        
+        /* TELA DE LOGIN */
+        #login-screen { justify-content: center; align-items: center; background-color: var(--bg-tertiary); padding: 20px; background-image: radial-gradient(circle at center, #1a1a1a 0%, #0d0d0d 100%); }
+        .login-box { background: var(--bg-primary); padding: 40px 25px; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.7); text-align: center; width: 100%; max-width: 420px; border: 1px solid var(--bg-tertiary); animation: slideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .login-box h2 { margin-bottom: 25px; font-size: 1.8rem; font-weight: 800; }
+        .login-box input, .login-box select { width: 100%; padding: 16px; margin-bottom: 18px; border: 2px solid transparent; border-radius: 10px; background: var(--bg-tertiary); color: white; outline: none; font-size: 1rem; transition: 0.3s; }
+        .login-box input:focus, .login-box select:focus { border-color: var(--accent-color); background: #131514; box-shadow: 0 0 10px rgba(76, 175, 80, 0.2); }
+        .login-box button { width: 100%; padding: 18px; background: var(--accent-color); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1.1rem; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 0 var(--accent-hover); position: relative; top: 0; }
+        .login-box button:hover { background: var(--accent-hover); top: -2px; box-shadow: 0 6px 0 #2e7d32; }
+        .login-box button:active { top: 2px; box-shadow: 0 2px 0 #2e7d32; }
+        .login-box button:disabled { opacity: 0.5; cursor: not-allowed; top: 0 !important; box-shadow: none !important; }
+
+        /* CHAT AREA & SIDEBAR */
+        #chat-screen { position: relative; width: 100%; height: 100%; display: none; }
+        #chat-screen.active { display: flex; }
+
+        .sidebar { width: 280px; background-color: var(--bg-secondary); display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 50; border-right: 1px solid var(--bg-tertiary); }
+        
+        .user-info { padding: 20px 15px; background-color: var(--bg-tertiary); display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.3s; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .user-info:hover { background-color: #1a1a1a; }
+        .user-info img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color); box-shadow: 0 0 10px rgba(76, 175, 80, 0.3); }
+        .user-details { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .user-details span { font-weight: bold; font-size: 1rem; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; color: white; }
+        .user-details small { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        .user-info i.bx-cog { color: var(--text-muted); font-size: 1.3rem; transition: 0.3s; }
+        .user-info:hover i.bx-cog { color: white; transform: rotate(90deg); }
+        
+        .channels { padding: 15px 10px; flex: 1; overflow-y: auto; }
+        .channels::-webkit-scrollbar { width: 4px; }
+        .channels::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 2px; }
+        .channel { padding: 12px; border-radius: 8px; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; margin-bottom: 2px; }
+        .channel.active { background-color: rgba(255,255,255,0.06); color: white; }
+        .channel:hover:not(.active) { background-color: rgba(255,255,255,0.03); color: var(--text-normal); }
+
+        .chat-area { flex: 1; display: flex; flex-direction: column; background-color: var(--bg-primary); width: 100%; position: relative; }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid var(--bg-tertiary); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 10; background: var(--bg-primary); }
+        .chat-header .title-area { display: flex; align-items: center; gap: 12px; }
+        .chat-header h3 { font-size: 1.1rem; font-weight: 700; color: white; }
+        .menu-btn { display: none; background: none; border: none; color: white; font-size: 1.6rem; cursor: pointer; padding: 5px; border-radius: 5px; transition: 0.2s; }
+        .menu-btn:hover { background: rgba(255,255,255,0.05); }
+        
+        .chat-header button.logout { background: #da373c; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        .chat-header button.logout:hover { background: #a1282c; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(218, 55, 60, 0.2); }
+
+        .messages-container { flex: 1; overflow-y: auto; padding: 15px 20px; display: flex; flex-direction: column; gap: 2px; background-image: radial-gradient(circle at center, rgba(39, 46, 41, 0.4) 0%, rgba(30, 36, 32, 0) 100%); }
+        .messages-container::-webkit-scrollbar { width: 8px; }
+        .messages-container::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 4px; }
+        .messages-container::-webkit-scrollbar-track { background: transparent; }
+
+        .message { display: flex; gap: 10px; animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; padding: 4px 10px; border-radius: 10px; transition: background 0.15s ease; border: 1px solid transparent; }
+        .message:hover { background: rgba(255,255,255,0.015); border-color: rgba(255,255,255,0.03); }
+        .message:active { background: rgba(255,255,255,0.03); transform: scale(0.995); } 
+        
+        .avatar-wrapper { position: relative; display: inline-block; flex-shrink: 0; z-index: 10; }
+        .status-dot { position: absolute; bottom: 0; right: 0; transform: none; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--bg-primary); background-color: #4CAF50; transition: background-color 0.3s, border-color 0.3s; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        
+        /* HACKER MASK PURE CSS - EXCLUSIVO ADM */
+        .css-hacker-mask {
+            background-color: #0d110d !important;
+            background-image:
+                linear-gradient(-30deg, transparent 40%, #0f0 40%, #0f0 60%, transparent 60%),
+                linear-gradient(30deg, transparent 40%, #0f0 40%, #0f0 60%, transparent 60%),
+                linear-gradient(90deg, #0f0 10%, transparent 10%, transparent 30%, #0f0 30%, #0f0 40%, transparent 40%, transparent 60%, #0f0 60%, #0f0 70%, transparent 70%, transparent 90%, #0f0 90%),
+                linear-gradient(0deg, #0f0 100%, transparent 100%);
+            background-position: 20% 35%, 80% 35%, 50% 75%, 50% 75%;
+            background-size: 25% 15%, 25% 15%, 40% 10%, 45% 2%;
+            background-repeat: no-repeat;
+            border: 2px solid #0f0 !important;
+            border-radius: 50% !important;
+            color: transparent !important;
+        }
+        
+          .message img.avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 2px solid var(--bg-tertiary); box-shadow: 3px 3px 0px rgba(0,0,0,0.5); display: block; position: relative; z-index: 1; }
+        .message img.avatar:hover { opacity: 0.9; transform: scale(1.1) rotate(-3deg); box-shadow: 5px 5px 0px rgba(0,0,0,0.6); }
+        
+        .message-content { flex: 1; overflow: hidden; position: relative; z-index: 1; display: flex; flex-direction: column; }
+        .message-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+        .message-header strong { color: white; font-size: 1.05rem; font-weight: 700; cursor: pointer; }
+        .message-header strong:hover { text-decoration: underline; }
+        .message-header small { color: var(--text-muted); font-size: 0.8rem; font-weight: 500; }
+        .message-body { color: var(--text-normal); line-height: 1.6; font-size: 1rem; word-wrap: break-word; background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 0 12px 12px 12px; display: inline-block; width: fit-content; max-width: 100%; }
+
+        /* Estilo WhatsApp (Minhas mensagens na direita) */
+        .message.mine .message-inner-wrapper { flex-direction: row-reverse; }
+        .message.mine .message-header { justify-content: flex-end; flex-direction: row-reverse; }
+        .message.mine .message-content { align-items: flex-end; }
+        .message.mine .message-reply-context { margin-left: auto; margin-right: 0; flex-direction: row-reverse; padding-left: 0; padding-right: 25px; text-align: right; }
+        .message.mine .message-reply-context::before { left: auto; right: 10px; border-left: none; border-right: 2px solid #4f545c; border-top-left-radius: 0; border-top-right-radius: 6px; }
+        .message.mine .message-body { background: rgba(76, 175, 80, 0.15); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px 0 12px 12px; text-align: left; }
+        .message.mine .reply-btn { margin-left: 0; margin-right: auto; }
+        .message.grouped.mine .message-header { left: 12px; right: auto; }
+
+        /* Novas Molduras Sólidas de Admin */
+        .frame-gold-solid { border: 4px solid #FFD700 !important; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.6) !important; background: rgba(255,215,0,0.2); }
+        .frame-diamond-solid { border: 4px solid #00FFFF !important; outline: 3px solid #0000FF !important; outline-offset: -3px; box-shadow: inset 0 0 10px #00FFFF, 0 0 15px #0000FF !important; }
+
+        /* Sistema de Grupo (Discord 2) */
+        .message.grouped { margin-top: -4px; padding-top: 2px; }
+        .message.grouped .avatar-wrapper { opacity: 0; pointer-events: none; height: 0; padding: 0; margin: 0; width: 48px; }
+        .message.grouped .message-header strong, .message.grouped .message-header small { display: none; }
+        .message.grouped .message-header { margin-bottom: 0; justify-content: flex-end; position: absolute; right: 12px; top: 8px; z-index: 10; width: auto; }
+        .message.grouped .reply-btn { padding: 2px 6px; font-size: 1rem; }
+        
+        /* Fundo Azul (Estilo Discord) quando o usuário é Mencionado */
+        .message.message-mentioned { background-color: rgba(88, 101, 242, 0.12) !important; border-left: 4px solid #5865F2 !important; padding-left: 15px !important; margin-top: 6px; margin-bottom: 6px; border-radius: 6px; box-shadow: inset 0 0 15px rgba(88, 101, 242, 0.1); }
+        .message.message-mentioned:hover { background-color: rgba(88, 101, 242, 0.18) !important; }
+
+        /* IMAGENS DO CHAT (Quadrados) */
+        .chat-img { max-width: 350px; max-height: 350px; width: auto; height: auto; object-fit: contain; border-radius: 12px; margin-top: 12px; cursor: pointer; border: 2px solid var(--bg-tertiary); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: block; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .chat-img:hover { border-color: var(--accent-color); transform: scale(1.03) translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+
+        .chat-input-area { padding: 15px 20px 25px 20px; display: flex; gap: 12px; align-items: center; background-color: var(--bg-primary); border-top: 1px solid var(--bg-tertiary); box-shadow: 0 -4px 15px rgba(0,0,0,0.1); z-index: 10; }
+        .input-wrapper { display: flex; flex: 1; background-color: var(--bg-tertiary); border-radius: 14px; padding: 4px 16px; align-items: center; border: 1px solid transparent; transition: 0.2s; }
+        .input-wrapper:focus-within { border-color: rgba(255,255,255,0.1); background: #111; }
+        
+        .input-wrapper textarea { flex: 1; padding: 14px 10px; border: none; background: transparent; color: white; outline: none; font-size: 1rem; resize: none; max-height: 150px; overflow-y: auto; font-family: inherit; line-height: 1.5; }
+        .input-wrapper textarea::-webkit-scrollbar { width: 5px; }
+        .input-wrapper textarea::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 5px; }
+        
+        .file-btn { color: var(--text-muted); cursor: pointer; font-size: 1.6rem; transition: 0.2s; padding: 8px; border-radius: 8px; background: none; border: none; outline: none; display: flex; align-items: center; justify-content: center; }
+        .file-btn:hover { color: white; background: rgba(255,255,255,0.05); }
+        
+        #send-btn { background: var(--accent-color); color: white; border: none; width: 50px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); flex-shrink: 0; box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3); }
+        #send-btn:hover { background: var(--accent-hover); transform: scale(1.08) rotate(-5deg); box-shadow: 0 6px 15px rgba(76, 175, 80, 0.4); }
+        #send-btn:active { transform: scale(0.95); box-shadow: 0 2px 5px rgba(76, 175, 80, 0.4); }
+
+        /* MODAIS */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.3s ease; }
+        .modal.active { display: flex; opacity: 1; }
+        .modal-content { background: var(--bg-primary); padding: 35px; border-radius: 16px; width: 90%; max-width: 450px; position: relative; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.7); border: 1px solid var(--bg-tertiary); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal.active .modal-content { transform: scale(1); }
+        
+        .close-btn { position: absolute; top: 18px; right: 22px; font-size: 2.2rem; cursor: pointer; color: var(--text-muted); transition: 0.3s; line-height: 1; z-index: 11; }
+        .close-btn:hover { color: white; transform: scale(1.1); }
+        
+        /* Animação de Compra da Loja */
+        .compra-animacao { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); background: linear-gradient(135deg, #FFD700, #ff8c00); padding: 20px 40px; border-radius: 12px; color: black; font-weight: 900; font-size: 1.2rem; text-align: center; z-index: 999999; opacity: 0; pointer-events: none; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 40px rgba(255, 215, 0, 0.8); border: 3px solid white; text-transform: uppercase; }
+        .compra-animacao.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        
+        /* Adicionado Scroll e Altura Máxima no Perfil */
+        .profile-edit-area { display: flex; flex-direction: column; align-items: center; gap: 18px; margin-top: 25px; max-height: 75vh; overflow-y: auto; overflow-x: hidden; padding-right: 8px; padding-bottom: 10px; }
+        .profile-edit-area::-webkit-scrollbar { width: 6px; }
+        .profile-edit-area::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 6px; }
+        
+        /* Área visual unificada do perfil (Quadrado Grande) */
+        .profile-visual-container { width: 100%; max-width: 320px; aspect-ratio: 1 / 1.1; display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; border: 2px solid var(--bg-tertiary); box-shadow: 0 10px 25px rgba(0,0,0,0.5); margin-bottom: 10px; }
+        .profile-preview-card { width: 100%; flex: 1; border: none; border-radius: 0; margin-bottom: 0; box-shadow: none; position: relative; }
+
+             /* Molduras CSS Puras e Animadas (Admin e VIP) */
+        .frame-neon { border: 2px solid transparent !important; box-shadow: 0 0 15px #0ff, inset 0 0 10px rgba(0,255,255,0.5) !important; animation: neonPulse 1.5s infinite alternate; }
+        @keyframes neonPulse { from { border-color: #0ff; box-shadow: 0 0 10px #0ff, 0 0 20px #0ff, inset 0 0 10px rgba(0,255,255,0.5); } to { border-color: #00aaff; box-shadow: 0 0 20px #00aaff, 0 0 40px #00aaff, inset 0 0 15px rgba(0,170,255,0.6); } }
+        
+        .frame-fire { border: 2px solid #ff4500 !important; box-shadow: 0 0 15px #ff4500, 0 0 30px #ff0000, inset 0 0 15px #ff8c00 !important; animation: fireFlicker 0.4s infinite alternate; }
+        @keyframes fireFlicker { 0% { border-color: #ff4500; box-shadow: 0 0 15px #ff4500, 0 0 25px #ff0000, inset 0 0 10px #ff8c00; } 100% { border-color: #ff0000; box-shadow: 0 0 20px #ff0000, 0 0 35px #ff4500, inset 0 0 15px #ffaa00; } }
+
+        .frame-void { border: 2px solid #8a2be2 !important; box-shadow: 0 0 15px #8a2be2, 0 0 30px #ff00ff, inset 0 0 15px #8a2be2 !important; animation: voidPulse 2s infinite; }
+        @keyframes voidPulse { 0% { border-color: #8a2be2; box-shadow: 0 0 10px #8a2be2, inset 0 0 10px #8a2be2; } 50% { border-color: #ff00ff; box-shadow: 0 0 25px #ff00ff, 0 0 50px #ff00ff, inset 0 0 20px #ff00ff; } 100% { border-color: #8a2be2; box-shadow: 0 0 10px #8a2be2, inset 0 0 10px #8a2be2; } }
+
+        /* Molduras da Loja (Novas) */
+        .frame-picture { border: 5px solid #8b4513 !important; border-style: ridge !important; box-shadow: inset 0 0 15px rgba(0,0,0,0.9), 0 5px 15px rgba(0,0,0,0.6) !important; background: #4a250a; }
+        
+        .frame-ocean { border: 3px solid #00bfff !important; box-shadow: 0 0 15px #00bfff, inset 0 0 15px #00bfff !important; animation: oceanWave 2s infinite alternate ease-in-out; }
+        @keyframes oceanWave { 0% { border-color: #00bfff; box-shadow: 0 0 10px #00bfff, inset 0 0 5px #00bfff; } 100% { border-color: #00fa9a; box-shadow: 0 0 25px #00fa9a, inset 0 0 15px #00fa9a; } }
+        
+        .frame-slime { border: 3px solid #32cd32 !important; box-shadow: 0 10px 0 #228b22, inset 0 0 10px #32cd32 !important; animation: slimeBounce 1.5s infinite; border-radius: 12px 12px 25px 25px !important; }
+        @keyframes slimeBounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05) translateY(2px); box-shadow: 0 15px 0 #228b22, inset 0 0 15px #32cd32 !important; } }
+
+        /* Fundos Especiais de Admin/VIP */
+        .admin-banner { background: #000 !important; position: relative; overflow: hidden; z-index: 1; border-bottom: 2px solid gold; }
+        .admin-banner::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 20% 30%, #4a148c 0%, transparent 40%), radial-gradient(circle at 80% 70%, #01579b 0%, transparent 40%), conic-gradient(from 180deg at 50% 50%, #6a1b9a, #1565c0, #6a1b9a); opacity: 0.7; filter: blur(10px); animation: galaxyRotate 20s linear infinite; }
+        @keyframes galaxyRotate { from { transform: scale(1.5) rotate(0deg); } to { transform: scale(1.5) rotate(360deg); } }
+
+        .bg-nitro-fire { background: #000 !important; position: relative; overflow: hidden; z-index: 1; border-bottom: 2px solid #ff4500; }
+        .bg-nitro-fire::before { content: ''; position: absolute; inset: -50%; background: radial-gradient(circle at center, #ff8c00 0%, #ff4500 30%, #8b0000 60%, #000 100%); opacity: 0.6; filter: blur(20px); animation: firePulse 3s infinite alternate; z-index: -2; }
+        .bg-nitro-fire::after { content: ''; position: absolute; bottom: -100%; left: -50%; width: 200%; height: 200%; background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23n)" opacity="0.3"/></svg>'), linear-gradient(0deg, #ff4500 0%, #ff8c00 50%, transparent 100%); mix-blend-mode: screen; animation: fireRise 2s infinite linear; z-index: -1; filter: blur(2px); opacity: 0.8; }
+        @keyframes fireRise { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+        @keyframes firePulse { 0% { opacity: 0.4; transform: scale(1); } 100% { opacity: 0.7; transform: scale(1.1); } }
+
+        /* Hacker Corrigido: Literalmente zeros e uns caindo pesadamente */
+        .bg-matrix { background: #000 !important; position: relative; overflow: hidden; z-index: 1; border-bottom: 2px solid #0f0; }
+        .bg-matrix::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,255,0,0.1) 0%, rgba(0,0,0,0) 100%); z-index: -2; }
+        .bg-matrix::after { content: '010101010100101010111\A 101010101011010101010\A 010101010101101010101\A 101010101010010101010\A 010101010101010101010\A 101010101010110101010'; position: absolute; top: -150%; left: 0; width: 100%; color: #0f0; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; line-height: 18px; white-space: pre-wrap; text-shadow: 0 0 8px #0f0; animation: matrixRain 2.5s linear infinite; z-index: -1; opacity: 0.6; }
+        @keyframes matrixRain { from { transform: translateY(0); } to { transform: translateY(150%); } }
+
+        .bg-crowns { background: #1a1a1a !important; position: relative; overflow: hidden; z-index: 1; border-bottom: 2px solid gold; }
+        .bg-crowns::before { content: ''; position: absolute; inset: -100%; background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 100 100"><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="50">👑</text></svg>'); background-repeat: repeat; background-size: 60px 60px; opacity: 0.15; animation: crownsDiagonal 20s linear infinite; z-index: -2; filter: drop-shadow(0 0 2px gold); }
+        .bg-crowns::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.8) 100%); z-index: -1; }
+
+        /* Banners Novos da Loja (Partículas) */
+        .bg-forest { background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364) !important; position: relative; overflow: hidden; z-index: 1; border-bottom: 2px solid #4CAF50; }
+        .bg-forest::after { content: ''; position: absolute; inset: 0; background-image: radial-gradient(circle at center, rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 15px 15px; animation: floatUp 15s linear infinite; z-index: -1; opacity: 0.5; }
+        @keyframes floatUp { from { background-position: 0 150px; } to { background-position: 0 -150px; } }
+
+        .bg-bloodmoon { background: linear-gradient(to bottom, #4a0000, #1a0000) !important; position: relative; overflow: hidden; z-index: 1; border-bottom: 2px solid #ff0000; }
+        .bg-bloodmoon::before { content: ''; position: absolute; top: 15px; right: 25px; width: 45px; height: 45px; background: radial-gradient(circle, #ff0000 40%, transparent 70%); border-radius: 50%; box-shadow: 0 0 25px #ff0000; animation: moonPulse 2s infinite alternate; z-index: -1; }
+        @keyframes moonPulse { from { transform: scale(1); opacity: 0.7; } to { transform: scale(1.1); opacity: 1; } }
+
+        /* Estilo da Loja */
+        .shop-item { background: var(--bg-secondary); padding: 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary); display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .shop-item:hover { border-color: var(--terraria-gold); transform: translateY(-2px); }
+        .shop-item-info strong { color: white; display: block; font-size: 0.95rem; }
+        .shop-item-info small { color: var(--text-muted); font-size: 0.8rem; }
+        .shop-buy-btn { background: var(--terraria-gold); color: black; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .shop-buy-btn:hover { transform: scale(1.05); background: #fff000; }
+        .shop-buy-btn.owned { background: #4CAF50; color: white; cursor: default; }
+
+        .btn-secondary { background: var(--bg-secondary); padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 0.95rem; transition: 0.3s; width: 100%; color: var(--text-normal); border: 1px solid var(--bg-tertiary); font-weight: 500; }
+        .btn-secondary:hover { background: #2a2a2a; color: white; border-color: rgba(255,255,255,0.1); }
+        
+        .profile-edit-area input[type="text"] { width: 100%; padding: 14px; border-radius: 8px; border: 2px solid transparent; background: var(--bg-tertiary); color: white; outline: none; transition: 0.3s; }
+        .profile-edit-area input[type="text"]:focus { border-color: var(--accent-color); background: #131514; }
+        
+        .profile-edit-area button.save { width: 100%; padding: 16px; background: var(--accent-color); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1.05rem; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 0 var(--accent-hover); margin-top: 10px; }
+        .profile-edit-area button.save:hover { background: var(--accent-hover); box-shadow: 0 6px 0 #2e7d32; transform: translateY(-2px); }
+        .profile-edit-area button.save:active { box-shadow: 0 2px 0 #2e7d32; transform: translateY(2px); }
+        
+        /* Modal do Cropper */
+        .cropper-container { width: 100%; max-height: 60vh; background: #000; margin-bottom: 15px; border-radius: 8px; overflow: hidden; border: 2px solid var(--bg-tertiary); }
+        .cropper-container img { max-width: 100%; display: block; }
+        
+        /* Modal de Visualização de Perfil de Terceiros e Edição (Estilo Discord) */
+        #view-profile-modal .modal-content { padding: 0; overflow: hidden; max-width: 420px; border-radius: 16px; }
+        #view-profile-modal .profile-banner { width: 100%; height: 120px; background-color: #5c6bc0; transition: background 0.3s; position: relative; z-index: 1; }
+        #view-profile-modal .profile-info { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: -60px; padding: 25px; padding-top: 0; position: relative; z-index: 2; }
+        #view-profile-modal .profile-info .avatar-wrapper { position: relative; z-index: 10; }
+        #view-profile-modal .profile-info img { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 6px solid var(--bg-primary); background: var(--bg-primary); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        #view-profile-modal .profile-info h3 { color: white; font-size: 1.6rem; font-weight: 800; margin-top: 5px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        
+        /* Inputs de Cor no Modal de Edição */
+        .color-picker-group { display: flex; align-items: center; justify-content: space-between; width: 100%; background: var(--bg-tertiary); padding: 14px; border-radius: 10px; margin-bottom: 5px; border: 1px solid transparent; transition: 0.2s; }
+        .color-picker-group:hover { border-color: rgba(255,255,255,0.05); }
+        .color-picker-group label { color: var(--text-normal); font-size: 0.95rem; font-weight: 500; }
+        .color-picker-group input[type="color"] { border: 2px solid var(--bg-primary); cursor: pointer; height: 38px; width: 55px; border-radius: 6px; background: transparent; padding: 0; transition: 0.2s; }
+        .color-picker-group input[type="color"]:hover { transform: scale(1.05); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+        
+        #view-profile-modal .profile-info p { color: var(--text-normal); background: var(--bg-tertiary); padding: 18px; border-radius: 10px; width: 100%; text-align: center; word-break: break-word; line-height: 1.5; border: 1px solid rgba(255,255,255,0.03); margin-top: 5px; }
+
+        /* Lista de Membros (Right Sidebar) */
+        .members-sidebar { width: 260px; background-color: var(--bg-secondary); border-left: 1px solid var(--bg-tertiary); display: flex; flex-direction: column; overflow-y: auto; transition: 0.3s ease; z-index: 40; }
+        .members-sidebar::-webkit-scrollbar { width: 4px; }
+        .members-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 2px; }
+        
+        .member-item { display: flex; align-items: center; gap: 12px; padding: 12px 18px; cursor: pointer; transition: 0.2s; border-radius: 8px; margin: 2px 8px; opacity: 0.7; border: 1px solid transparent; }
+        .member-item:hover { background-color: rgba(255,255,255,0.03); opacity: 1; border-color: rgba(255,255,255,0.03); }
+        .member-item.online { opacity: 1; }
+        .member-item img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--bg-primary); box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        .member-item .status-dot { width: 12px; height: 12px; bottom: 0; right: 0; border-width: 2.5px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .member-item-info { display: flex; flex-direction: column; overflow: hidden; }
+        .member-item-info span { color: white; font-size: 0.95rem; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        .member-item-info small { color: var(--text-muted); font-size: 0.75rem; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; font-weight: 500; }
+
+        /* Sugestões de Menção (@) */
+        .mention-suggestions { display: none; position: absolute; bottom: calc(100% + 15px); left: 20px; width: 280px; max-height: 250px; overflow-y: auto; background: var(--bg-secondary); border: 1px solid var(--bg-tertiary); border-radius: 12px; box-shadow: 0 -10px 25px rgba(0,0,0,0.6); z-index: 200; flex-direction: column; padding: 8px; backdrop-filter: blur(5px); }
+        .mention-suggestions.active { display: flex; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .mention-suggestions::-webkit-scrollbar { width: 4px; }
+        .mention-suggestions::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        
+        .mention-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; cursor: pointer; border-radius: 8px; color: white; transition: 0.2s; border-left: 3px solid transparent; }
+        .mention-item:hover, .mention-item.selected { background: var(--bg-primary); border-left-color: var(--accent-color); padding-left: 17px; }
+        .mention-item img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); }
+        .mention-item span { font-weight: 500; font-size: 0.95rem; }
+
+        .members-sidebar.hidden { display: none !important; }
+        .mention-text { color: #5865F2; font-weight: 700; background: rgba(88, 101, 242, 0.15); padding: 1px 5px; border-radius: 4px; text-shadow: 0 0 5px rgba(88, 101, 242, 0.3); }
+
+        @media (max-width: 900px) {
+            .members-sidebar { position: absolute; right: -100%; height: 100%; z-index: 60; transition: right 0.3s ease; display: flex; box-shadow: -10px 0 30px rgba(0,0,0,0.5); } 
+            .members-sidebar.show-mobile { right: 0; }
+        }
+
+        /* Visualizador de Imagem (Lightbox) */
+        #lightbox-modal { background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); }
+        #lightbox-img { max-width: 95%; max-height: 92vh; border-radius: 12px; box-shadow: 0 0 40px rgba(0,0,0,0.8); border: 2px solid rgba(255,255,255,0.1); animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* REGRAS DO RP TERRARIA */
+        .rp-rules-content { text-align: left; font-size: 0.95rem; line-height: 1.7; color: var(--text-normal); max-height: 55vh; overflow-y: auto; padding-right: 15px; border-left: 4px solid var(--accent-color); padding-left: 20px; background: rgba(0,0,0,0.3); border-radius: 0 10px 10px 0; margin-top: 15px; }
+        .rp-rules-content::-webkit-scrollbar { width: 5px; }
+        .rp-rules-content::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 3px; }
+        .rp-rules-content h4 { color: #ff5252; margin-top: 20px; margin-bottom: 8px; text-transform: uppercase; font-size: 0.95rem; font-weight: 700; letter-spacing: 1px; text-shadow: 1px 1px 0 black; }
+        .rp-rules-content p { margin-bottom: 12px; opacity: 0.9; }
+        .rp-rules-content strong { color: white; font-weight: 700; }
+
+        /* LISTA DE BOSSES */
+        #boss-list-container { padding: 5px; }
+        .boss-card { display: flex; align-items: center; gap: 12px; background: var(--bg-secondary); padding: 15px; border-radius: 10px; border: 2px solid var(--bg-tertiary); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .boss-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.05); background: #1a1a1a; }
+        .boss-card.defeated { border-color: gold; background: rgba(255, 215, 0, 0.08); box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
+        .boss-card.defeated strong { text-decoration: line-through; color: var(--text-muted); opacity: 0.7; }
+        .boss-info { display: flex; flex-direction: column; flex: 1; text-align: left; }
+        .boss-info strong { color: white; font-size: 1rem; font-weight: 700; }
+        .boss-info span { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-top: 2px; }
+        .boss-check { width: 24px; height: 24px; accent-color: gold; cursor: pointer; transition: 0.2s; }
+        .boss-check:hover:not(:disabled) { transform: scale(1.1); }
+        
+        /* Artes CSS dos Bosses */
+        .boss-icon { width: 36px; height: 36px; border-radius: 6px; box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 2px 2px 4px rgba(0,0,0,0.3); flex-shrink: 0; border: 1px solid rgba(255,255,255,0.05); }
+        
+        /* RESPONSIVIDADE (Celular) */
+        @media (max-width: 768px) {
+            .sidebar { position: absolute; left: -100%; height: 100%; box-shadow: 10px 0 30px rgba(0,0,0,0.5); width: 290px; }
+            .sidebar.open { left: 0; }
+            .menu-btn { display: block; }
+            .chat-header h3 { font-size: 1rem; }
+            .chat-input-area { padding: 12px 15px 20px 15px; gap: 8px; }
+            .input-wrapper { padding: 2px 12px; border-radius: 12px; }
+            .input-wrapper textarea { padding: 12px 6px; font-size: 0.95rem; }
+            #send-btn { width: 45px; height: 45px; border-radius: 12px; font-size: 1.2rem; }
+            .modal-content { padding: 25px 20px; width: 95%; }
+            .profile-edit-area { max-height: 70vh; }
+            .profile-visual-container { max-width: 280px; }
+            .emoji-picker { grid-template-columns: repeat(6, 1fr); min-height: 220px; }
+            .emoji-btn { font-size: 1.8rem; }
         }
     </style>
-</head>
+
+    </head>
 <body>
-
-    <div class="container">
-        <h1>SERVIDOR DEDICADO BOT</h1>
-        
-        <div class="status-panel">
-            STATUS: <span id="status-text">OFFLINE</span>
-            <span id="room-code-display">SALA: ----</span>
-        </div>
-
-        <div class="input-group">
-            <input type="text" id="custom-code" placeholder="CÓDIGO (EX: MDZ-1234)">
-            <button id="btn-start">INICIAR SERVIDOR</button>
-        </div>
-
-        <div class="log-console" id="log-console"></div>
-
-        <div class="players-list">
-            JOGADORES CONECTADOS: <span id="player-count">0</span>
+    <!-- Modal Regras RP Terraria -->
+    <div id="rules-modal" class="modal" style="z-index: 999999;">
+        <div class="modal-content slide-up" style="max-width: 500px; padding-top: 40px;">
+            <span class="close-btn" id="close-rules">&times;</span>
+            <h2 style="color: var(--accent-color); margin-bottom: 15px;"><i class='bx bx-book-bookmark'></i> Regras do RP Terraria</h2>
+            <div class="rp-rules-content">
+                <p>Ao entrar neste RP, você está selando um pacto de sangue com as seguintes leis inquebráveis:</p>
+                <h4>1. Economia e Preços (Sem Caridade)</h4>
+                <p>É <strong>ESTRITAMENTE PROIBIDO</strong> usar qualquer glitch, bug ou exploit para duplicar itens ou moedas. É proibido dar itens endgame ou de graça para novatos. O comércio deve ter preços justos e condizentes com a progressão atual do mundo para não estragar a diversão alheia.</p>
+                <h4>2. Lealdade de Classe Absoluta</h4>
+                <p>Ao escolher Mago, Arqueiro, Armeiro, Guerreiro, Summoner ou Ioiôzeiro, você fica <strong>amarrado à classe</strong>. Não use armas, armaduras ou invocadores de outras classes, nem para "facilitar rapidinho". Faça seu papel na equipe.</p>
+                <h4>3. Respeito Mútuo e Baús</h4>
+                <p>Não abra, não mexa e não roube de baús que não são seus. Não utilize fornalhas, mesas de craft ou bigornas alheias para proveito próprio (nem as do spawn) para evitar colher minérios processados por engano. Construa sua base e cuide dela.</p>
+                <h4>4. Protocolo de Invocação de Boss</h4>
+                <p>Ninguém faz Boss sozinho! Requisitos para chamar um Boss: <br><strong>(A)</strong> Pelo menos 3 pessoas ONLINE; <br><strong>(B)</strong> Aceitação 100% explícita dos três de que querem fazer o Boss; <br><strong>(C)</strong> Permissão de um ADM. Matou Boss sozinho escondido = Reset de personagem e banimento.</p>
+            </div>
+            <button id="accept-rules" class="save" style="margin-top: 15px; background: var(--terraria-gold); color: black;">Eu Aceito e Juro Cumprir</button>
         </div>
     </div>
 
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script>
-        const btnStart = document.getElementById("btn-start");
-        const customCodeInput = document.getElementById("custom-code");
-        const statusText = document.getElementById("status-text");
-        const roomCodeDisplay = document.getElementById("room-code-display");
-        const consoleEl = document.getElementById("log-console");
-        const playerCountEl = document.getElementById("player-count");
+    <!-- Modal Bosses -->
+    <div id="boss-modal" class="modal" style="z-index: 99999;">
+        <div class="modal-content slide-up" style="max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;">
+            <span class="close-btn" id="close-bosses">&times;</span>
+            <h2 style="color: var(--terraria-gold); margin-bottom: 15px;"><i class='bx bx-skull'></i> Registro de Bosses</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Apenas administradores podem registrar a morte de um Boss.</p>
+            <div id="boss-list-container" style="overflow-y: auto; flex: 1; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); padding-right: 5px;">
+                <!-- Renderizado via JS -->
+            </div>
+        </div>
+    </div>
 
-        let peer = null;
-        let peerConnections = [];
-        let otherPlayers = {};
-        let hostLoop = null;
+    <div id="login-screen" class="screen active fade-in">
+        <div class="login-box">
+            <h2 style="color: var(--accent-color);"><i class='bx bxs-chat'></i> Chat mania</h2>
+            <p style="margin-bottom: 20px; color: var(--text-muted);">RP de Terraria | por henry luan</p>
+            
+            <input type="text" id="username-input" placeholder="Digite seu usuário..." style="margin-bottom: 10px;">
+            <input type="password" id="password-input" placeholder="Sua Senha Mestre..." style="margin-bottom: 10px; background: var(--bg-tertiary); color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; outline: none;">
+            
+                 <div id="register-fields">
+                <select id="class-select" style="width: 100%; padding: 15px; margin-bottom: 15px; border: none; border-radius: 8px; background: var(--bg-tertiary); color: white; outline: none; font-size: 1rem; cursor: pointer;">
+                    <option value="" disabled selected>Escolha sua Classe...</option>
+                    <option value="Mago">Mago</option>
+                    <option value="Arqueiro">Arqueiro</option>
+                    <option value="Armeiro">Armeiro</option>
+                    <option value="Guerreiro">Guerreiro</option>
+                    <option value="Summoner">Summoner</option>
+                    <option value="Ioiôzeiro">Ioiôzeiro</option>
+                </select>
+            </div>
+            
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; cursor: pointer; text-decoration: underline;" id="open-rules-btn">Ler Termos e Regras do RP</p>
+            
+            <button id="login-btn" style="opacity: 0.5; cursor: not-allowed;" disabled>Criar Conta</button>
+            <button id="sign-in-btn" style="margin-top: 10px; background: transparent; color: var(--accent-color); border: 2px solid var(--accent-color);">Já tem conta? Entrar</button>
+            <button id="back-register-btn" style="display: none; margin-top: 10px; background: transparent; color: var(--text-muted); border: 2px solid var(--bg-tertiary);">Voltar para Criar Conta</button>
+     </div>
+    </div>
 
-        // O Jogador BOT Falso que ficará no céu
-        const botPlayer = {
-            name: "[BOT] SERVIDOR",
-            x: 10000, 
-            y: -5000, // No céu, longe de tudo
-            hp: 99999, // Imortal
-            walkCycle: 0,
-            currentWeapon: null,
-            reserveWeapon: null,
-            dir: 1,
-            aimAngle: 0,
-            outfit: { hat: 8, shirt: 7, pants: 5, shoes: 5, hair: 5 }, // Skin de Demônio de Terno
-            currentInterior: false,
-            width: 30, height: 55
+    <div id="chat-screen" class="screen">
+        <div class="sidebar" id="sidebar">
+            <div class="user-info" id="open-profile-btn">
+                <div class="avatar-wrapper">
+                    <img id="sidebar-avatar" src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="80">🔥</text></svg>' alt="Avatar">
+                    <div id="sidebar-status" class="status-dot"></div>
+                </div>
+                         <div class="user-details">
+                    <span id="sidebar-name">Usuário</span>
+                    <small id="sidebar-desc">Sem descrição</small>
+                    <div id="sidebar-points" style="color: var(--terraria-gold); font-size: 0.8rem; font-weight: bold; margin-top: 2px; display: flex; align-items: center; gap: 3px;"><i class='bx bx-coin-stack'></i> 0 StarCoins</div>
+                </div>
+                <i class='bx bxs-cog'></i>
+            </div>
+                      <div class="channels" id="channel-list">
+                <div id="btn-open-shop" style="background: linear-gradient(135deg, #9c27b0, #7b1fa2); padding: 14px; border-radius: 10px; margin: 10px; cursor: pointer; text-align: center; color: white; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 5px 15px rgba(156, 39, 176, 0.4); border: 2px solid #e1bee7; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;"><i class='bx bxs-shopping-bag' style="font-size: 1.4rem;"></i> Loja de Visuais</div>
+                <div class="category-title">Canais de Texto</div>
+                <div class="channel text-channel active" data-channel="geral">〔💬〕geral</div>
+                <div class="channel text-channel" data-channel="avisos">〔📢〕avisos</div>
+                
+                </div>
+            <div style="padding: 15px; border-top: 1px solid var(--bg-tertiary); display: flex; flex-direction: column; gap: 10px; margin-top: auto;">
+                <button id="btn-open-bosses" style="width: 100%; padding: 10px; background: #2a374a; color: white; border: 1px solid #3d4f68; border-radius: 6px; cursor: pointer; font-weight: bold;"><i class='bx bx-skull'></i> Lista de Bosses</button>
+                <button id="logout-btn" class="logout" style="width: 100%;"><i class='bx bx-log-out'></i> Sair</button>
+            </div>
+
+        </div>
+
+
+
+        <div class="chat-area">
+            <div class="chat-header">
+                <div class="title-area">
+                    <button class="menu-btn" id="menu-toggle"><i class='bx bx-menu'></i></button>
+                    <h3>〔💬〕geral</h3>
+                </div>
+                <button id="toggle-members-btn" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; transition: 0.2s;"><i class='bx bxs-group'></i></button>
+            </div>
+            
+            <div style="display: flex; flex: 1; overflow: hidden; position: relative;">
+                <div id="messages-container" class="messages-container" style="flex: 1;"></div>
+                
+                <div class="members-sidebar" id="members-sidebar">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+                        <h4 style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin: 0;">Membros do Servidor</h4>
+                        <button id="btn-open-rules-app" style="background: var(--accent-color); color: white; border: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: 0.2s;" title="Regras do RP"><i class='bx bx-book'></i></button>
+                    </div>
+                    <div id="members-list"></div>
+                </div>
+            </div>
+            
+            
+            <div id="reply-bar" class="reply-bar">
+                <span>Respondendo a <strong id="reply-to-user" style="color: var(--accent-color);">User</strong></span>
+                <span class="close-reply" id="close-reply-btn">&times;</span>
+            </div>
+            <div class="chat-input-area" style="position: relative;">
+                <div id="mention-suggestions" class="mention-suggestions"></div>
+                <div class="input-wrapper">
+                    <button id="image-url-btn" type="button" class="file-btn" style="background: none; border: none; outline: none;"><i class='bx bx-link'></i></button>
+                    <textarea id="message-input" rows="1" placeholder="Conversar em #geral..."></textarea>
+                </div>
+                <button id="send-btn"><i class='bx bxs-send'></i></button>
+            </div>
+        </div>
+    </div>
+
+       <div id="profile-modal" class="modal">
+        <div class="modal-content slide-up">
+            <span class="close-btn" id="close-profile" style="z-index: 10;">&times;</span>
+            <h2>Seu Perfil</h2>
+            <div class="profile-edit-area">
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px; width: 100%; text-align: left;">Pré-visualização do Perfil:</p>
+                <div class="profile-preview-card">
+                    <div id="preview-banner" style="height: 60px; background-color: #5c6bc0; transition: background 0.3s;"></div>
+                    <div style="display: flex; flex-direction: column; align-items: center; margin-top: -30px; padding-bottom: 10px;">
+                        <div class="avatar-wrapper">
+                            <div id="profile-avatar-preview" style="font-size: 40px; text-align: center; display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--accent-color); background: var(--bg-tertiary); z-index: 1; position: relative;">🔥</div>
+                            <div id="profile-status-preview" class="status-dot" style="width: 16px; height: 16px; bottom: 2px; right: 2px; border-width: 3px; z-index: 2;"></div>
+                        </div>
+                        <h4 style="margin-top: 5px; font-size: 1rem;" id="preview-name">Nome</h4>
+                        <small style="color: var(--text-muted); font-size: 0.7rem;" id="preview-desc">Descrição</small>
+                    </div>
+                </div>
+
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px; width: 100%; text-align: left;">Escolha seu Emoji:</p>
+                <div class="emoji-picker" id="emoji-picker"></div>
+                
+                         <div class="color-picker-group">
+                    <label>Cor de Fundo (Perfil):</label>
+                    <input type="color" id="profile-banner-color" value="#5c6bc0">
+                </div>
+
+                <div id="custom-options-container" style="display: none; width: 100%; background: rgba(255, 215, 0, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed var(--terraria-gold); margin-bottom: 10px; text-align: left;">
+
+                    <h4 id="custom-title" style="color: var(--terraria-gold); margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase;"><i class='bx bxs-paint-roll'></i> Customização Especial</h4>
+                    
+                    <label style="color: var(--text-muted); font-size: 0.8rem;">Efeito do Banner:</label>
+                    <select id="admin-bg-select" style="width: 100%; padding: 10px; margin-bottom: 10px; background: var(--bg-primary); color: white; border: 1px solid var(--bg-tertiary); border-radius: 6px; outline: none;">
+                        </select>
+
+                    <label style="color: var(--text-muted); font-size: 0.8rem;">Moldura do Avatar:</label>
+                    <select id="admin-frame-select" style="width: 100%; padding: 10px; background: var(--bg-primary); color: white; border: 1px solid var(--bg-tertiary); border-radius: 6px; outline: none;">
+                        </select>
+                </div>
+
+
+                <input type="text" id="profile-desc-input" placeholder="Defina um status/descrição...">
+                <input type="text" id="profile-wishlist-input" placeholder="O que você procura? (separe por vírgulas)..." style="width: 100%; padding: 12px; border-radius: 6px; border: none; background: var(--bg-tertiary); color: white; outline: none;">
+                <button id="save-profile-btn" class="save">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOJA CORRIGIDA: AGORA FICA FORA DO PERFIL -->
+    <div id="shop-modal" class="modal" style="z-index: 100000;">
+        <div class="modal-content slide-up" style="max-width: 450px; max-height: 85vh; overflow-y: auto;">
+            <span class="close-btn" id="close-shop" style="z-index: 10;">&times;</span>
+            <h2 style="color: var(--terraria-gold); margin-bottom: 5px;"><i class='bx bxs-shopping-bag'></i> Loja do Chat</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Envie mensagens para ganhar StarCoins e desbloquear visuais épicos!</p>
+            <div id="shop-items-container" style="display: flex; flex-direction: column; gap: 10px;">
+            </div>
+        </div>
+    </div>
+
+    <div id="view-profile-modal" class="modal">
+        <div class="modal-content slide-up">
+            <span class="close-btn" id="close-view-profile" style="z-index: 10; color: white; text-shadow: 0px 2px 5px rgba(0,0,0,0.8);">&times;</span>
+            <div id="view-profile-banner" class="profile-banner"></div>
+            <div class="profile-info">
+                <div class="avatar-wrapper">
+                    <img id="view-profile-avatar" src="" alt="Avatar">
+                    <div id="view-profile-status" class="status-dot" style="width: 22px; height: 22px; bottom: 5px; right: 5px; border-width: 4px;"></div>
+                </div>
+                <h3 id="view-profile-username">Nome</h3>
+                <p id="view-profile-desc">Descrição</p>
+                <div style="width: 100%; margin-top: 10px; text-align: center;">
+                    <strong style="color: var(--terraria-gold); font-size: 0.85rem;"><i class='bx bx-cart'></i> Procurando por:</strong>
+                    <div id="view-profile-wishlist" style="margin-top: 5px; display: flex; flex-wrap: wrap; justify-content: center; gap: 5px;"></div>
+                </div>
+                <button id="admin-give-money-btn" style="display: none; width: 100%; padding: 10px; margin-top: 15px; background: #FFD700; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;"><i class='bx bx-coin-stack'></i> Dar StarCoins</button>
+                <button id="admin-delete-account-btn" style="display: none; width: 100%; padding: 10px; margin-top: 10px; background: #da373c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;"><i class='bx bx-trash'></i> Banir / Apagar Conta</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="lightbox-modal" class="modal">
+        <span class="close-btn" id="close-lightbox" style="color: white; right: 30px; top: 30px;">&times;</span>
+        <img id="lightbox-img" src="">
+    </div>
+
+
+    <!-- Menu de Contexto Mobile/Discord -->
+    <div id="context-menu-overlay" class="context-menu-overlay">
+        <div class="context-sheet">
+            <button class="context-btn" id="ctx-reply"><i class='bx bx-reply'></i> Responder</button>
+            <button class="context-btn" id="ctx-copy"><i class='bx bx-copy'></i> Copiar Mensagem</button>
+            <button class="context-btn" id="ctx-edit"><i class='bx bx-edit-alt'></i> Editar Mensagem</button>
+            <button class="context-btn delete" id="ctx-delete"><i class='bx bx-trash'></i> Apagar Mensagem</button>
+            <div style="height: 1px; background: var(--bg-tertiary); margin: 10px 0;"></div>
+            <button class="context-btn" id="ctx-cancel"><i class='bx bx-x'></i> Cancelar</button>
+        </div>
+    </div>
+    <script type="module">
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { 
+            getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, deleteDoc, doc, getDocs, setDoc, getDoc, updateDoc, deleteField
+        } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAXZQw3SlUgZHqtiYjn5X2iWx21PIl2eik",
+            authDomain: "starsuperchat.firebaseapp.com",
+            projectId: "starsuperchat",
+            storageBucket: "starsuperchat.firebasestorage.app",
+            messagingSenderId: "247526339931",
+            appId: "1:247526339931:web:896309f890600cb813567e",
+            measurementId: "G-MFRD5VFEX8"
         };
 
-        function log(message, type = "info") {
-            const time = new Date().toLocaleTimeString();
-            const div = document.createElement("div");
-            div.className = "log-entry";
-            div.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${type}">${message}</span>`;
-            consoleEl.appendChild(div);
-            consoleEl.scrollTop = consoleEl.scrollHeight;
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        // Firebase Storage extinto!
+        let currentUser = {
+            username: localStorage.getItem('chat_username') || null,
+            password: null,
+            terrariaClass: null,
+            avatar: '🔥',
+            desc: 'Disponível',
+            wishlist: '',
+            bannerColor: '#5c6bc0',
+            statusColor: '#4CAF50',
+            lastOnline: Date.now(),
+            isAdmin: localStorage.getItem('chat_admin') === 'true',
+            isVip: localStorage.getItem('chat_vip') === 'true',
+            points: 0,
+            unlockedBanners: [],
+            unlockedFrames: [],
+            adminBg: '',
+            adminFrame: ''
+        };
+
+        const lojaInventario = {
+            banners: [
+                { id: 'bg-forest', name: 'Floresta Estrelada (Partículas)', price: 100 },
+                { id: 'bg-bloodmoon', name: 'Lua de Sangue (Efeito Voxel)', price: 200 }
+            ],
+            frames: [
+                { id: 'frame-picture', name: 'Quadro de Madeira Retrô', price: 50 },
+                { id: 'frame-ocean', name: 'Oceano Animado', price: 150 },
+                { id: 'frame-slime', name: 'Slime Pingando', price: 120 }
+            ]
+        };
+
+        const vipAdminItems = {
+            banners: [
+                { id: 'admin-banner', name: 'Galáxia Clássica' },
+                { id: 'bg-nitro-fire', name: 'Fogo Rasgando (Nitro 🔥)' },
+                { id: 'bg-matrix', name: 'Hacker Matrix (1 e 0)' },
+                { id: 'bg-crowns', name: 'Ostentação Suprema (👑)' }
+            ],
+            frames: [
+                { id: 'admin-frame', name: 'Arco-íris RGB' },
+                { id: 'frame-neon', name: 'Neon Cyberpunk' },
+                { id: 'frame-fire', name: 'Anel de Fogo Escaldante' },
+                { id: 'frame-void', name: 'Vórtice do Vazio' },
+                { id: 'frame-gold-solid', name: 'Ouro Sólido (Borda Grossa)' },
+                { id: 'frame-diamond-solid', name: 'Diamante Geométrico' }
+            ]
+        };
+
+        let currentReply = null; 
+        let currentEdit = null; 
+        let initialLoad = true; 
+        let currentChannel = 'geral'; 
+        
+        const emojisDisponiveis = ["🔥", "😎", "👾", "🤖", "👻", "👽", "💩", "💀", "🤡", "👹", "👺", "🐱", "🐶", "🐺", "🐸", "🐉", "🍎", "🍔", "🍕", "🎸", "🎮", "⚽", "🚗", "🚀", "💎", "🔮", "🗡️", "🛡️", "👑", "⭐", "🦄", "🐼", "🦊", "⚡", "❄️", "🍉", "🍩", "🍌", "🍓", "🍒", "🥝", "🍿", "🍻", "🥂", "🏆", "🚁", "🛸", "🚨", "🌋", "🏝️", "🌲", "🍁", "🍄", "🌎", "🌙", "☀️", "✨", "🎉", "🎊", "💣", "🔫", "🩸", "🧲", "⚔️", "⚖️", "⚙️", "💰", "💸", "🚪", "🛀", "🚽", "🔑", "🧸", "🎁", "📦", "📚", "📖", "🔨", "🪓", "⛏️", "⚒️", "🔧", "💉", "💊", "🩹", "🚬", "⚰️", "🪦", "⚠️", "⛔", "🚫", "☢️", "☣️", "💯", "💢", "💥", "💫", "💦", "💨", "🐵", "🦁", "🐯", "🐴", "🐮", "🐷", "🐗", "🐭", "🐹", "🐰", "🐻", "🐨", "🐔", "🐧", "🐦", "🐤", "🦆", "🦅", "🦉", "🦇", "🦋", "🐌", "🐛", "🐜", "🐝", "🐞", "🦂", "🕷️", "🕸️", "🐢", "🐍", "🦎", "🦖", "🦕", "🐙", "🦑", "🦐", "🦞", "🦀", "🐡", "🐠", "🐟", "🐬", "🐳", "🐋", "🦈", "🐊", "🐅", "🐆", "🦓", "🦍", "🦧", "🐘", "🦛", "🦏", "🐪", "🐫", "🦒", "🦘", "🐃", "🐂", "🐄", "🐎", "🐖", "🐏", "🐑", "🦙", "🐐", "🦌", "🐕", "🐩", "🦮", "🐕‍🦺", "🐈", "🐓", "🦃", "🦚", "🦜", "🦢", "🦩", "🕊️", "🐇", "🦝", "🦨", "🦡", "🦦", "🦥", "🐁", "🐀", "🐿️", "🦔", "🐾", "🐉", "🐲", "🌵", "🎄", "🌳", "🌴", "🌱", "🌿", "☘️", "🍀", "🎍", "🎋", "🍃", "🍂", "🌾", "🌺", "🌻", "🌹", "🥀", "🌷", "🌼", "🌸", "💐", "🌰", "🎃"];
+
+        // Elementos DOM Expandidos
+        const els = {
+            loginScreen: document.getElementById('login-screen'),
+            chatScreen: document.getElementById('chat-screen'),
+            loginInput: document.getElementById('username-input'),
+            passInput: document.getElementById('password-input'),
+            classSelect: document.getElementById('class-select'),
+            loginBtn: document.getElementById('login-btn'),
+            openRulesBtn: document.getElementById('open-rules-btn'),
+            rulesModal: document.getElementById('rules-modal'),
+            closeRules: document.getElementById('close-rules'),
+            acceptRules: document.getElementById('accept-rules'),
+            openRulesAppBtn: document.getElementById('btn-open-rules-app'),
+            openBossesBtn: document.getElementById('btn-open-bosses'),
+            bossModal: document.getElementById('boss-modal'),
+            closeBosses: document.getElementById('close-bosses'),
+            bossListContainer: document.getElementById('boss-list-container'),
+            logoutBtn: document.getElementById('logout-btn'),
+            toggleMembersBtn: document.getElementById('toggle-members-btn'),
+            msgInput: document.getElementById('message-input'),
+            sendBtn: document.getElementById('send-btn'),
+            msgContainer: document.getElementById('messages-container'),
+            imgUrlBtn: document.getElementById('image-url-btn'),
+            sideName: document.getElementById('sidebar-name'),
+            sideDesc: document.getElementById('sidebar-desc'),
+            sideAvatar: document.getElementById('sidebar-avatar'),
+            openProfile: document.getElementById('open-profile-btn'),
+            profileModal: document.getElementById('profile-modal'),
+            closeProfile: document.getElementById('close-profile'),
+            avatarPreview: document.getElementById('profile-avatar-preview'),
+            emojiPicker: document.getElementById('emoji-picker'),
+            descInput: document.getElementById('profile-desc-input'),
+            wishlistInput: document.getElementById('profile-wishlist-input'),
+            saveProfileBtn: document.getElementById('save-profile-btn'),
+            bannerColorInput: document.getElementById('profile-banner-color'),
+            statusPreview: document.getElementById('profile-status-preview'),
+            sidebarStatus: document.getElementById('sidebar-status'),
+            viewProfileBanner: document.getElementById('view-profile-banner'),
+            viewProfileStatus: document.getElementById('view-profile-status'),
+            menuToggle: document.getElementById('menu-toggle'),
+            sidebar: document.getElementById('sidebar'),
+            viewProfileModal: document.getElementById('view-profile-modal'),
+            closeViewProfile: document.getElementById('close-view-profile'),
+            viewProfileAvatar: document.getElementById('view-profile-avatar'),
+            viewProfileUsername: document.getElementById('view-profile-username'),
+            viewProfileDesc: document.getElementById('view-profile-desc'),
+            replyBar: document.getElementById('reply-bar'),
+            replyToUser: document.getElementById('reply-to-user'),
+            closeReplyBtn: document.getElementById('close-reply-btn'),
+            ctxOverlay: document.getElementById('context-menu-overlay'),
+            ctxReply: document.getElementById('ctx-reply'),
+            ctxCopy: document.getElementById('ctx-copy'),
+            ctxEdit: document.getElementById('ctx-edit'),
+            ctxDelete: document.getElementById('ctx-delete'),
+            ctxCancel: document.getElementById('ctx-cancel'),
+            membersList: document.getElementById('members-list'),
+            mentionSuggestions: document.getElementById('mention-suggestions')
+        };
+
+        let allKnownUsers = []; // Guarda os usuários para a aba e pro sistema de menção
+        let mentionIndex = -1;  // Controle do teclado na caixa de marcação
+
+            // Sistema de cor de status removido - sempre verde
+        
+        // Transforma o texto do Emoji numa imagem SVG real e centraliza milimetricamente para evitar TOC
+                function getEmojiSvg(emoji) {
+            if (emoji === 'HACKER') {
+                const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230d110d' rx='50'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='38' font-weight='bold' font-family='monospace' fill='%230f0'>0101</text><circle cx='50' cy='50' r='46' fill='none' stroke='%230f0' stroke-width='4'/></svg>`;
+                return `data:image/svg+xml,${svg}`;
+            }
+            return `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='80'>${emoji}</text></svg>`;
         }
 
-        function updatePlayerCount() {
-            playerCountEl.innerText = peerConnections.length;
+
+        function loadEmojisToPicker() {
+            els.emojiPicker.innerHTML = emojisDisponiveis.map(e => `<button class="emoji-btn" data-val="${e}">${e}</button>`).join('');
+            if(currentUser && currentUser.isAdmin) {
+                els.emojiPicker.innerHTML += `<button class="emoji-btn css-hacker-mask" data-val="HACKER" style="width: 40px; height: 40px; margin: 5px; box-shadow: 0 0 10px #0f0;"></button>`;
+            }
+            document.querySelectorAll('.emoji-btn').forEach(btn => {
+                if(btn.getAttribute('data-val') === currentUser.avatar) btn.classList.add('selected');
+            });
+        }
+        
+        els.emojiPicker.addEventListener('click', (e) => {
+            const btn = e.target.closest('.emoji-btn');
+            if(btn) {
+                document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                currentUser.avatar = btn.getAttribute('data-val');
+                
+                els.avatarPreview.textContent = currentUser.avatar === 'HACKER' ? '' : currentUser.avatar;
+                if(currentUser.avatar === 'HACKER') els.avatarPreview.classList.add('css-hacker-mask');
+                else els.avatarPreview.classList.remove('css-hacker-mask');
+            }
+        });
+
+
+
+           // --- TROCA DE CANAIS ---
+        document.getElementById('channel-list').addEventListener('click', (e) => {
+            const channelEl = e.target.closest('.channel');
+            if (!channelEl) return;
+
+            if (channelEl.classList.contains('text-channel')) {
+                document.querySelectorAll('.text-channel').forEach(c => c.classList.remove('active'));
+                channelEl.classList.add('active');
+                currentChannel = channelEl.getAttribute('data-channel');
+                document.querySelector('.chat-header h3').innerHTML = channelEl.innerHTML;
+                updateChannelView();
+                initialLoad = true; 
+                if (window.msgListener) window.msgListener(); 
+                listenToMessages(); 
+            }
+        });
+
+        function updateChannelView() {
+            if (currentChannel === 'avisos' && !currentUser.isAdmin) {
+                document.querySelector('.chat-input-area').style.display = 'none';
+            } else {
+                document.querySelector('.chat-input-area').style.display = 'flex';
+                els.msgInput.placeholder = `Conversar em #${currentChannel}...`;
+            }
+        }
+              // --- SISTEMA DE BOSSES TERRARIA ---
+                const terrariaBosses = [
+            { id: 'slime', name: 'King Slime', type: 'boss', css: 'boss-slime' },
+            { id: 'eye', name: 'Eye of Cthulhu', type: 'boss', css: 'boss-eye' },
+            { id: 'eater', name: 'Eater of Worlds', type: 'boss', css: 'boss-eater' },
+            { id: 'brain', name: 'Brain of Cthulhu', type: 'boss', css: 'boss-brain' },
+            { id: 'queenbee', name: 'Queen Bee', type: 'boss', css: 'boss-bee' },
+            { id: 'skeletron', name: 'Skeletron', type: 'boss', css: 'boss-skeletron' },
+            { id: 'deerclops', name: 'Deerclops', type: 'boss', css: 'boss-deer' },
+            { id: 'wof', name: 'Wall of Flesh', type: 'boss', css: 'boss-wof' },
+            { id: 'queenslime', name: 'Queen Slime', type: 'boss', css: 'boss-qslime' },
+            { id: 'twins', name: 'The Twins', type: 'boss', css: 'boss-twins' },
+            { id: 'destroyer', name: 'The Destroyer', type: 'boss', css: 'boss-destroyer' },
+            { id: 'prime', name: 'Skeletron Prime', type: 'boss', css: 'boss-prime' },
+            { id: 'plantera', name: 'Plantera', type: 'boss', css: 'boss-plantera' },
+            { id: 'golem', name: 'Golem', type: 'boss', css: 'boss-golem' },
+            { id: 'empress', name: 'Empress of Light', type: 'boss', css: 'boss-empress' },
+            { id: 'fishron', name: 'Duke Fishron', type: 'boss', css: 'boss-fishron' },
+            { id: 'cultist', name: 'Lunatic Cultist', type: 'boss', css: 'boss-cultist' },
+            { id: 'moonlord', name: 'Moon Lord', type: 'boss', css: 'boss-moonlord' }
+        ];
+
+
+        function listenToBosses() {
+            const docRef = doc(db, "server", "bossProgress");
+            onSnapshot(docRef, (docSnap) => {
+                let data = docSnap.exists() ? docSnap.data() : {};
+                renderBosses(data);
+            });
         }
 
-        btnStart.addEventListener("click", () => {
-            let roomCode = customCodeInput.value.trim().toUpperCase();
-            if (!roomCode) {
-                roomCode = "MDZ-" + Math.floor(Math.random() * 9000 + 1000);
+        function renderBosses(progressData) {
+            if (!els.bossListContainer) return;
+            els.bossListContainer.innerHTML = '';
+            
+            terrariaBosses.forEach(boss => {
+                const isDefeated = progressData[boss.id] === true;
+                const div = document.createElement('div');
+                div.className = 'boss-card ' + (isDefeated ? 'defeated' : '');
+                
+                div.innerHTML = `
+                    <div class="boss-icon ${boss.css}"></div>
+                    <div class="boss-info">
+                        <strong>${boss.name}</strong>
+                        <span>${boss.type === 'boss' ? 'Boss Principal' : 'Mini-Boss'}</span>
+                    </div>
+                    <input type="checkbox" class="boss-check" data-id="${boss.id}" ${isDefeated ? 'checked' : ''} ${!currentUser.isAdmin ? 'disabled' : ''}>
+                `;
+                els.bossListContainer.appendChild(div);
+            });
+            
+            if(currentUser.isAdmin) {
+                document.querySelectorAll('.boss-check').forEach(chk => {
+                    chk.addEventListener('change', async (e) => {
+                        const bossId = e.target.getAttribute('data-id');
+                        const checked = e.target.checked;
+                        await setDoc(doc(db, "server", "bossProgress"), { [bossId]: checked }, { merge: true });
+                    });
+                });
+            }
+        }
+
+        // Eventos Modais Novos
+        els.openRulesBtn.addEventListener('click', () => els.rulesModal.classList.add('active'));
+        if(els.openRulesAppBtn) els.openRulesAppBtn.addEventListener('click', () => els.rulesModal.classList.add('active'));
+        els.closeRules.addEventListener('click', () => els.rulesModal.classList.remove('active'));
+        
+        els.acceptRules.addEventListener('click', () => {
+            els.rulesModal.classList.remove('active');
+            // Libera o botão de entrar!
+            els.loginBtn.disabled = false;
+            els.loginBtn.style.opacity = '1';
+            els.loginBtn.style.cursor = 'pointer';
+            els.loginBtn.textContent = 'Entrar no App';
+        });
+        
+        els.openBossesBtn.addEventListener('click', () => els.bossModal.classList.add('active'));
+        els.closeBosses.addEventListener('click', () => els.bossModal.classList.remove('active'));
+
+        // --- INICIALIZAÇÃO OTIMIZADA COM FILTRO DE SEGURANÇA ---
+        async function init() {
+            // FIREBASE: DELETAR CONTAS ANTIGAS SEM SENHA AO ABRIR O APP!
+            try {
+                const usersSnap = await getDocs(collection(db, "users"));
+                usersSnap.forEach(async (uDoc) => {
+                    const data = uDoc.data();
+                    if (data.username && !data.password) {
+                        await deleteDoc(doc(db, "users", uDoc.id));
+                        console.log("🔥 CONTA APAGADA POR FALTA DE SENHA:", uDoc.id);
+                    }
+                });
+            } catch(e) { console.error("Erro ao varrer contas antigas:", e); }
+
+            const savedUser = localStorage.getItem('chat_username');
+            const savedPass = localStorage.getItem('chat_password');
+
+            if (savedUser && savedPass) {
+                const userRef = doc(db, "users", savedUser);
+                const docSnap = await getDoc(userRef);
+                
+                if (docSnap.exists() && docSnap.data().password === savedPass) {
+                    currentUser = { ...currentUser, ...docSnap.data() };
+                    els.loginScreen.classList.remove('active');
+                    els.chatScreen.classList.add('active');
+                    
+                    // Pede permissão para Notificações Nativas do sistema
+                    if ("Notification" in window && Notification.permission !== "granted") {
+                        Notification.requestPermission();
+                    }
+                    
+                    updateSidebar();
+                    listenToMessages();
+                    listenToUsers();
+                    listenToBosses();
+                } else {
+                    localStorage.removeItem('chat_username');
+                    localStorage.removeItem('chat_password');
+                }
+            }
+        }
+
+            // Alternância de Telas de Login e Registro
+        let isLoginMode = false;
+        const signInBtn = document.getElementById('sign-in-btn');
+        const backRegisterBtn = document.getElementById('back-register-btn');
+        const registerFields = document.getElementById('register-fields');
+
+        signInBtn.addEventListener('click', () => {
+            isLoginMode = true;
+            registerFields.style.display = 'none';
+            signInBtn.style.display = 'none';
+            backRegisterBtn.style.display = 'block';
+            els.loginBtn.textContent = 'Entrar na Conta';
+            els.loginBtn.disabled = false;
+            els.loginBtn.style.opacity = '1';
+            els.loginBtn.style.cursor = 'pointer';
+        });
+
+        backRegisterBtn.addEventListener('click', () => {
+            isLoginMode = false;
+            registerFields.style.display = 'block';
+            signInBtn.style.display = 'block';
+            backRegisterBtn.style.display = 'none';
+            els.loginBtn.textContent = 'Criar Conta';
+            els.loginBtn.disabled = true;
+            els.loginBtn.style.opacity = '0.5';
+            els.loginBtn.style.cursor = 'not-allowed';
+        });
+
+        // Login Super Seguro e Criação
+        els.loginBtn.addEventListener('click', async () => {
+            const user = els.loginInput.value.trim();
+            const pass = els.passInput.value.trim();
+            const charClass = els.classSelect.value;
+
+            if (!user || !pass) {
+                alert("⚔️ OBRIGATÓRIO: Preencha seu usuário e uma senha segura!");
+                return;
             }
 
-            log("Inicializando PeerJS...", "warn");
-            btnStart.disabled = true;
-            customCodeInput.disabled = true;
+            const userRef = doc(db, "users", user);
+            const docSnap = await getDoc(userRef);
 
-            peer = new Peer(roomCode);
-
-            peer.on('open', (id) => {
-                log(`Servidor aberto com sucesso! Código: ${id}`, "success");
-                statusText.innerText = "ONLINE";
-                statusText.style.color = "#00ff00";
-                roomCodeDisplay.innerText = "SALA: " + id;
-                startHostLoop();
-            });
-
-            peer.on('connection', (conn) => {
-                log(`Novo jogador conectando: ${conn.peer}`, "info");
-                
-                // Limite de jogadores
-                if (peerConnections.length >= 11) {
-                    log(`Conexão recusada (Servidor Cheio): ${conn.peer}`, "warn");
-                    conn.close();
+            if (isLoginMode) {
+                // Fluxo de Entrar na Conta
+                if (!docSnap.exists()) {
+                    alert("🛑 Conta não encontrada! Verifique o nome de usuário ou crie uma conta nova.");
                     return;
                 }
+                const data = docSnap.data();
+                if (data.password !== pass) {
+                    alert("🛑 Senha Incorreta!");
+                    return;
+                }
+                currentUser = { ...currentUser, ...data };
+            } else {
+                // Fluxo de Criar Conta
+                if (!charClass) {
+                    alert("🔮 OBRIGATÓRIO: Você precisa declarar uma Classe de Terraria antes de criar a conta.");
+                    return;
+                }
+                if (docSnap.exists()) {
+                    alert("🛑 Este nome de usuário já está em uso! Escolha outro ou clique em 'Entrar'.");
+                    return;
+                }
+                currentUser.username = user;
+                currentUser.password = pass;
+                currentUser.terrariaClass = charClass;
+                await setDoc(userRef, currentUser);
+            }
 
-                peerConnections.push(conn);
-                updatePlayerCount();
+            localStorage.setItem('chat_username', user);
+            localStorage.setItem('chat_password', pass);
 
-                conn.on('open', () => {
-                    log(`Jogador entrou no mundo: ${conn.peer}`, "success");
-                    // Envia um world_sync vazio para não bugar as casas originais do player
-                    conn.send({ type: 'world_sync', houses: [], tents: [], campfires: [], drops: [] });
+            els.loginScreen.classList.remove('active');
+            els.chatScreen.classList.add('active');
+            
+            // Pede permissão para Notificações Nativas do sistema
+            if ("Notification" in window && Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+
+            updateSidebar();
+            listenToMessages();
+            listenToUsers(); 
+            listenToBosses();
+        });
+
+
+
+        // Logout
+        els.logoutBtn.addEventListener('click', async () => {
+            localStorage.removeItem('chat_username');
+            location.reload();
+        });
+
+        // Menu Mobile
+        els.menuToggle.addEventListener('click', () => {
+            els.sidebar.classList.toggle('open');
+        });
+
+        // Menu Membros (Desktop e Mobile)
+        els.toggleMembersBtn.addEventListener('click', () => {
+            if (window.innerWidth <= 900) {
+                els.membersList.parentElement.classList.toggle('show-mobile');
+            } else {
+                els.membersList.parentElement.classList.toggle('hidden');
+            }
+        });
+
+        // Fechar menus ao clicar fora no mobile
+        document.addEventListener('click', (e) => {
+            if(window.innerWidth <= 900) {
+                if(!els.sidebar.contains(e.target) && !els.menuToggle.contains(e.target)) {
+                    els.sidebar.classList.remove('open');
+                }
+                if(!els.membersList.parentElement.contains(e.target) && !els.toggleMembersBtn.contains(e.target)) {
+                    els.membersList.parentElement.classList.remove('show-mobile');
+                }
+            }
+        });
+
+        // --- PERFIL E CROPPER ---
+        async function loadUserProfile(username) {
+            const userRef = doc(db, "users", username);
+            const docSnap = await getDoc(userRef);
+            if (docSnap.exists()) {
+                currentUser = { ...currentUser, ...docSnap.data() };
+                await setDoc(userRef, currentUser, { merge: true });
+            } else {
+                await setDoc(userRef, currentUser);
+            }
+        }
+
+                        function updateSidebar() {
+            const badge = currentUser.isAdmin ? '👑 ' : (currentUser.isVip ? '💎 ' : '');
+            els.sideName.innerHTML = `${badge}${currentUser.username} <span style="color:var(--terraria-gold); font-size:0.7rem; font-weight:normal;">[${currentUser.terrariaClass || 'Desconhecido'}]</span>`;
+            els.sideDesc.textContent = currentUser.desc;
+            document.getElementById('sidebar-points').innerHTML = `<i class='bx bx-coin-stack'></i> ${currentUser.points || 0} StarCoins`;
+            
+            els.sideAvatar.src = getEmojiSvg(currentUser.avatar);
+            els.sideAvatar.className = 'user-avatar-click'; // Limpa
+            if (currentUser.adminFrame) els.sideAvatar.classList.add(currentUser.adminFrame);
+            
+            if(els.sidebarStatus) els.sidebarStatus.style.backgroundColor = '#4CAF50';
+        }
+
+        // Lógica da Loja
+        document.getElementById('btn-open-shop').addEventListener('click', () => {
+            document.getElementById('shop-modal').classList.add('active');
+            const container = document.getElementById('shop-items-container');
+            container.innerHTML = '';
+            
+            [...lojaInventario.frames, ...lojaInventario.banners].forEach(item => {
+                const isFrame = item.id.includes('frame');
+                const isUnlocked = (currentUser.unlockedFrames || []).includes(item.id) || (currentUser.unlockedBanners || []).includes(item.id);
+                
+                const div = document.createElement('div');
+                div.className = 'shop-item';
+                div.innerHTML = `
+                    <div class="shop-item-info">
+                        <strong>${isFrame ? '🖼️' : '🌌'} ${item.name}</strong>
+                        <small>Custo: ${item.price} StarCoins</small>
+                    </div>
+                    <button class="shop-buy-btn ${isUnlocked ? 'owned' : ''}" data-id="${item.id}" data-type="${isFrame ? 'frame' : 'banner'}" data-price="${item.price}">
+                        ${isUnlocked ? 'Equipado/Comprado' : '<i class="bx bx-cart"></i> Comprar'}
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+
+                        document.querySelectorAll('.shop-buy-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const isOwned = e.target.classList.contains('owned');
+                    const price = parseInt(e.target.getAttribute('data-price'));
+                    const id = e.target.getAttribute('data-id');
+                    const type = e.target.getAttribute('data-type');
+                    
+                    if (isOwned) {
+                        // Equipar item que já possui
+                        if(type === 'frame') currentUser.adminFrame = id;
+                        else currentUser.adminBg = id;
+                        await setDoc(doc(db, "users", currentUser.username), currentUser, { merge: true });
+                        alert(`✅ Visual equipado com sucesso!`);
+                        document.getElementById('close-shop').click();
+                        updateSidebar();
+                        return;
+                    }
+
+                    if ((currentUser.points || 0) >= price) {
+                        currentUser.points -= price;
+                        if(type === 'frame') currentUser.unlockedFrames = [...(currentUser.unlockedFrames || []), id];
+                        else currentUser.unlockedBanners = [...(currentUser.unlockedBanners || []), id];
+                        
+                        // Equipa automaticamente ao comprar
+                        if(type === 'frame') currentUser.adminFrame = id;
+                        else currentUser.adminBg = id;
+
+                        await setDoc(doc(db, "users", currentUser.username), currentUser, { merge: true });
+                        
+                        // Nova Animação Visual de Compra
+                        const anim = document.createElement('div');
+                        anim.className = 'compra-animacao show';
+                        anim.innerHTML = '🎉 Parabéns!<br>Você conseguiu um visual épico!';
+                        document.body.appendChild(anim);
+                        setTimeout(() => { 
+                            anim.classList.remove('show'); 
+                            setTimeout(() => anim.remove(), 400); 
+                        }, 2500);
+
+                        document.getElementById('close-shop').click();
+                        updateSidebar();
+                    } else {
+                        alert("❌ Faltam StarCoins! Vá conversar no chat para ganhar mais.");
+                    }
                 });
+            });
 
-                conn.on('data', (data) => {
-                    // Recebe e guarda os movimentos dos jogadores reais
-                    if (data.type === 'player_update') {
-                        otherPlayers[conn.peer] = data.player;
-                    } 
-                    // Repassa o dano caso um jogador ataque o outro
-                    else if (data.type === 'route_damage') {
-                        let targetConn = peerConnections.find(c => c.peer === data.target);
-                        if (targetConn) targetConn.send({ type: 'take_damage', amount: data.amount });
-                        log(`Repassando dano de ${conn.peer} para ${data.target}`, "warn");
+        });
+        document.getElementById('close-shop').addEventListener('click', () => document.getElementById('shop-modal').classList.remove('active'));
+
+        els.openProfile.addEventListener('click', () => {
+            loadEmojisToPicker();
+            els.profileModal.classList.add('active');
+            els.avatarPreview.textContent = currentUser.avatar === 'HACKER' ? '' : currentUser.avatar;
+            if(currentUser.avatar === 'HACKER') els.avatarPreview.classList.add('css-hacker-mask');
+            else els.avatarPreview.classList.remove('css-hacker-mask');
+            els.descInput.value = currentUser.desc;
+            els.wishlistInput.value = currentUser.wishlist || '';
+            els.bannerColorInput.value = currentUser.bannerColor || '#5c6bc0';
+            els.statusPreview.style.backgroundColor = '#4CAF50';
+            if(window.innerWidth <= 768) els.sidebar.classList.remove('open');
+            
+            // Lógica Combinada (Admin, VIP e Loja)
+            const customContainer = document.getElementById('custom-options-container');
+            const bgSelect = document.getElementById('admin-bg-select');
+            const frameSelect = document.getElementById('admin-frame-select');
+            
+            bgSelect.innerHTML = '<option value="">Fundo Padrão (Cor)</option>';
+            frameSelect.innerHTML = '<option value="">Sem Moldura</option>';
+
+            let hasCustomOptions = false;
+
+            if (currentUser.isAdmin || currentUser.isVip) {
+                hasCustomOptions = true;
+                document.getElementById('custom-title').innerHTML = `<i class='bx bxs-crown'></i> Customização ${currentUser.isAdmin ? 'Admin' : 'VIP'}`;
+                vipAdminItems.banners.forEach(b => bgSelect.innerHTML += `<option value="${b.id}">[VIP/ADM] ${b.name}</option>`);
+                vipAdminItems.frames.forEach(f => frameSelect.innerHTML += `<option value="${f.id}">[VIP/ADM] ${f.name}</option>`);
+            } else {
+                document.getElementById('custom-title').innerHTML = `<i class='bx bxs-paint-roll'></i> Inventário da Loja`;
+            }
+
+            // Injeta o que foi comprado na loja
+            (currentUser.unlockedBanners || []).forEach(id => {
+                hasCustomOptions = true;
+                const item = lojaInventario.banners.find(b => b.id === id);
+                if(item) bgSelect.innerHTML += `<option value="${item.id}">[LOJA] ${item.name}</option>`;
+            });
+            (currentUser.unlockedFrames || []).forEach(id => {
+                hasCustomOptions = true;
+                const item = lojaInventario.frames.find(b => b.id === id);
+                if(item) frameSelect.innerHTML += `<option value="${item.id}">[LOJA] ${item.name}</option>`;
+            });
+
+            customContainer.style.display = hasCustomOptions ? 'block' : 'none';
+            bgSelect.value = currentUser.adminBg || '';
+            frameSelect.value = currentUser.adminFrame || '';
+
+
+            // Atualiza Preview Ao Vivo inicial
+            document.getElementById('preview-name').innerHTML = `${currentUser.isAdmin ? '👑 ' : ''}${currentUser.username}`;
+            document.getElementById('preview-desc').textContent = currentUser.desc;
+            
+                 // Reseta classes antigas do preview
+            const previewBanner = document.getElementById('preview-banner');
+            const previewAvatar = document.getElementById('profile-avatar-preview');
+            previewBanner.className = '';
+            previewAvatar.className = '';
+            
+            previewBanner.style.backgroundColor = currentUser.bannerColor || '#5c6bc0';
+            if(currentUser.adminBg) previewBanner.classList.add(currentUser.adminBg);
+            
+            if(currentUser.adminFrame) previewAvatar.classList.add(currentUser.adminFrame);
+
+                 // Eventos de Preview ao vivo pros Selects
+            bgSelect.onchange = (e) => { previewBanner.className = ''; if(e.target.value) previewBanner.classList.add(e.target.value); };
+            frameSelect.onchange = (e) => { 
+                previewAvatar.className = ''; 
+                if(currentUser.avatar === 'HACKER') previewAvatar.classList.add('css-hacker-mask');
+                if(e.target.value) previewAvatar.classList.add(e.target.value); 
+            };
+        });
+
+        // Eventos para atualizar o preview ao vivo
+        els.descInput.addEventListener('input', (e) => document.getElementById('preview-desc').textContent = e.target.value || 'Sem descrição');
+        els.bannerColorInput.addEventListener('input', (e) => document.getElementById('preview-banner').style.backgroundColor = e.target.value);
+
+
+        els.closeProfile.addEventListener('click', () => els.profileModal.classList.remove('active'));
+
+
+
+        // Salvar Perfil
+        els.saveProfileBtn.addEventListener('click', async () => {
+            currentUser.desc = els.descInput.value;
+            currentUser.wishlist = els.wishlistInput.value;
+            currentUser.bannerColor = els.bannerColorInput.value;
+            if(currentUser.isAdmin) {
+                currentUser.adminBg = document.getElementById('admin-bg-select').value;
+                currentUser.adminFrame = document.getElementById('admin-frame-select').value;
+            }
+            currentUser.statusColor = '#4CAF50'; // Sempre verde
+            currentUser.lastOnline = Date.now();
+            await setDoc(doc(db, "users", currentUser.username), currentUser);
+            updateSidebar();
+            els.profileModal.classList.remove('active');
+        });
+
+             // --- CHAT, MENSAGENS E LIGHTBOX ---
+                     function listenToMessages() {
+            const colName = currentChannel === 'geral' ? 'messages' : `messages_${currentChannel}`;
+            const q = query(collection(db, colName), orderBy("timestamp", "desc"), limit(40));
+            window.msgListener = onSnapshot(q, (snapshot) => {
+                const msgs = [];
+                
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    
+                    // TRAVA DE SEGURANÇA:
+                    if (data.userAvatar && data.userAvatar.length > 50 && !data.userAvatar.includes('<svg')) {
+                        const colName = currentChannel === 'geral' ? 'messages' : `messages_${currentChannel}`;
+                        deleteDoc(doc(db, colName, docSnap.id));
+                        return; 
+                    }
+                    
+                    // Filtra para exibir apenas mensagens do canal atual
+                    const msgChannel = data.channel || 'geral';
+                    if (msgChannel === currentChannel) {
+                        msgs.push({ id: docSnap.id, ...data });
                     }
                 });
 
-                conn.on('close', () => {
-                    log(`Jogador desconectou: ${conn.peer}`, "warn");
-                    peerConnections = peerConnections.filter(c => c.peer !== conn.peer);
-                    delete otherPlayers[conn.peer];
-                    updatePlayerCount();
+                          // --- SISTEMA DE NOTIFICAÇÃO LOCAL ---
+                // Gerenciador global para fechar as notificações e zerar o badge
+                if (!window.activeNotifications) {
+                    window.activeNotifications = [];
+                    window.unreadMessageCount = 0; // Cria o contador global
+                    window.addEventListener('focus', () => {
+                        window.activeNotifications.forEach(n => n.close());
+                        window.activeNotifications = []; // Limpa a lista após fechar tudo
+                        
+                        // NOVA ADIÇÃO: Limpa os banners de notificação nativos do Android
+                        if ('serviceWorker' in navigator) {
+                            navigator.serviceWorker.ready.then(reg => {
+                                reg.getNotifications().then(notifications => {
+                                    notifications.forEach(n => n.close());
+                                });
+                            });
+                        }
+
+                        // Zera o numerozinho do ícone do celular
+                        window.unreadMessageCount = 0;
+                        if ('clearAppBadge' in navigator) {
+                            navigator.clearAppBadge().catch(e => console.log(e));
+                        }
+                    });
+                }
+
+                // Verifica se não é o carregamento inicial e se temos permissão
+                if (!initialLoad && "Notification" in window && Notification.permission === "granted") {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            const newMsg = change.doc.data();
+                            const msgChannel = newMsg.channel || 'geral';
+                            
+                            // A MÁGICA ACONTECE AQUI: Não notifica se foi você mesmo e NÃO NOTIFICA se o site já estiver focado/aberto na sua tela!
+                            if (newMsg.username !== currentUser.username && !document.hasFocus()) {
+                                let title = '';
+                                // O body recebe exatamente o texto digitado pelo usuário, mantendo o formato "@nome mensagem"
+                                let body = newMsg.text || 'Anexo recebido';
+
+                                // Lógica de separação das Notificações
+                                if (msgChannel === 'avisos') {
+                                    title = `📢 Aviso Oficial de ${newMsg.username}`;
+                                } else if (newMsg.isAdminUser && newMsg.text && newMsg.text.includes('@todos')) {
+                                    title = `🚨 ${newMsg.username} convocou @todos`;
+                                } else if (newMsg.replyTo && newMsg.replyTo.username === currentUser.username) {
+                                    title = `↩️ ${newMsg.username} respondeu você`;
+                                } else if (newMsg.text && newMsg.text.includes(`@${currentUser.username}`)) {
+                                    title = `🔔 ${newMsg.username} marcou você`;
+                                }
+                                // Se caiu em alguma das regras, dispara a notificação
+                                if (title) {
+                                    // 1. A MÁGICA AGORA VEM PRIMEIRO: Atualiza o badge no celular!
+                                    // Colocar isso no topo evita que erros travem a contagem.
+                                    window.unreadMessageCount++;
+                                    if ('setAppBadge' in navigator) {
+                                        navigator.setAppBadge(window.unreadMessageCount).catch(e => console.log(e));
+                                    }
+
+                                    // 2. DISPARO DE NOTIFICAÇÃO (CORREÇÃO PARA ANDROID)
+                                    // O Android quebra o site inteiro se usar "new Notification()". Ele exige o Service Worker.
+                                    if ('serviceWorker' in navigator && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                                        navigator.serviceWorker.ready.then(function(registration) {
+                                            registration.showNotification(title, {
+                                                body: body,
+                                                icon: "https://cdn-icons-png.flaticon.com/512/3114/3114860.png",
+                                                vibrate: [200, 100, 200],
+                                                tag: "chat-msg" // Agrupa as notificações pra não floodar a tela
+                                            });
+                                        });
+                                    } else {
+                                        // No PC funciona normal o jeito antigo
+                                        try {
+                                            const notif = new Notification(title, { 
+                                                body: body, 
+                                                icon: "https://cdn-icons-png.flaticon.com/512/3114/3114860.png" 
+                                            });
+                                            window.activeNotifications.push(notif);
+                                            notif.onclick = function() {
+                                                window.focus();
+                                                notif.close();
+                                            };
+                                        } catch (err) {
+                                            console.error("Erro na notificação:", err);
+                                        }
+                                    }
+                                }
+
+
+                            }
+                        }
+                    });
+                }
+
+                
+                renderMessages(msgs.reverse());
+                initialLoad = false;
+            });
+        }
+
+                function renderMessages(messages) {
+            els.msgContainer.innerHTML = '';
+            let lastMsg = null; // Memória para o agrupamento do Discord 2
+
+            messages.forEach(msg => {
+                const date = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                let fileHTML = '';
+                
+                if (msg.fileUrl) {
+                    if (msg.fileType && msg.fileType.startsWith('image/')) {
+                        fileHTML = `<img src="${msg.fileUrl}" class="chat-img" data-full="${msg.fileUrl}" alt="Imagem anexada">`;
+                    } else {
+                        fileHTML = `<br><a href="${msg.fileUrl}" target="_blank" download style="color: var(--accent-color);"><i class='bx bxs-file'></i> Baixar Anexo</a>`;
+                    }
+                }
+
+                let replyHTML = '';
+                if (msg.replyTo) {
+                    replyHTML = `
+                        <div class="message-reply-context">
+                            <img src="${getEmojiSvg(msg.replyTo.avatar || '🔥')}">
+                            <strong>@${msg.replyTo.username}</strong>: ${msg.replyTo.text.substring(0, 30)}${msg.replyTo.text.length > 30 ? '...' : ''}
+                        </div>
+                    `;
+                }
+
+                let avatarSrc = msg.userAvatar;
+                if(avatarSrc && avatarSrc.length < 10) avatarSrc = getEmojiSvg(avatarSrc); 
+                else if (!avatarSrc) avatarSrc = getEmojiSvg('🔥');
+                
+                if (avatarSrc.includes('"')) avatarSrc = avatarSrc.replace(/"/g, "'");
+
+                          let formatText = msg.text || '';
+                // Corrigido para evitar bugs de HTML e deixar mais seguro
+                formatText = formatText.replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
+                
+                // Sistema Automático de Links
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                formatText = formatText.replace(urlRegex, function(url) {
+                    let extraInfo = "";
+                    if (url.includes('github.com') || url.includes('githubusercontent.com')) {
+                        extraInfo = " <strong>[<i class='bx bxl-github'></i> Link do GitHub]</strong>";
+                    } else if (url.includes('drive.google.com')) {
+                        extraInfo = " <strong>[<i class='bx bxl-google'></i> Google Drive]</strong>";
+                    }
+                    return `<a href="${url}" target="_blank" style="color: var(--accent-color); text-decoration: underline; word-break: break-all;">${url}</a>${extraInfo}`;
                 });
+
+                // Super Formatação de Texto (Acumulável e Maiúsculas Corrigidas)
+                // Título/Letreiro (Linhas que começam com # )
+                formatText = formatText.replace(/(?:^|\n)#\s+(.*)/g, '<br><span style="font-size: 1.6rem; font-weight: 900; line-height: 1.2; display: block; margin: 8px 0; color: var(--terraria-gold); text-transform: uppercase;">$1</span>');
+                
+                // Formatação básica ([\s\S] evita bugar com maiúsculas/espaços extras)
+                formatText = formatText.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>'); // **Negrito**
+                formatText = formatText.replace(/\*([\s\S]*?)\*/g, '<em>$1</em>'); // *Itálico*
+                formatText = formatText.replace(/__([\s\S]*?)__/g, '<span style="text-decoration: underline;">$1</span>'); // __Sublinhado__
+                formatText = formatText.replace(/~~([\s\S]*?)~~/g, '<del>$1</del>'); // ~~Tachado~~
+                
+                // Menções Inteligentes (Apenas usuários reais, ignora links e afins)
+                allKnownUsers.forEach(u => {
+                    if (formatText.includes(`@${u.username}`)) {
+                        formatText = formatText.split(`@${u.username}`).join(`<span class="mention-text">@${u.username}</span>`);
+                    }
+                });
+                if (msg.isAdminUser) { // @todos funciona apenas para adms
+                    formatText = formatText.split("@todos").join('<span class="mention-text" style="background: rgba(218, 55, 60, 0.2); color: #ff5252;">@todos</span>');
+                }
+                
+                formatText = formatText.replace(/\n/g, "<br>"); 
+                
+                // Thumbnail inteligente do YouTube pra não travar o celular com iframes pesados
+        const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const ytMatch = formatText.match(ytRegex);
+                  if (ytMatch && ytMatch[1]) {
+            formatText += `<br><a href="https://www.youtube.com/watch?v=${ytMatch[1]}" target="_blank"><img src="https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg" style="width:100%; max-width:300px; border-radius:8px; margin-top:10px; border:2px solid var(--accent-color); transition: 0.2s;"></a>`;
+        }
+
+
+
+                // Renderiza links de imagem direto no chat se for canal de Avisos
+                if (msg.channel === 'avisos' && msg.text) {
+                    const imgRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/i;
+                    const imgMatch = msg.text.match(imgRegex);
+                    if (imgMatch) {
+                        fileHTML += `<br><img src="${imgMatch[1]}" class="chat-img" data-full="${imgMatch[1]}" alt="Aviso">`;
+                    }
+                }
+
+                let editedTag = msg.isEdited ? `<small style="font-size: 0.7rem; color: var(--terraria-gold); margin-left: 5px;">(editado)</small>` : '';
+
+                // Lógica Discord 2: Agrupar se mesmo usuário, menos de 2 min e sem reply
+                let isGrouped = false;
+                if (lastMsg && 
+                    lastMsg.username === msg.username && 
+                    (msg.timestamp - lastMsg.timestamp) < 120000 && 
+                    !msg.replyTo) {
+                    isGrouped = true;
+                }
+
+                // Verifica se VOCÊ foi mencionado para pintar a mensagem toda de azul (Discord Style)
+                let isMentioned = false;
+                if (msg.text && (msg.text.includes(`@${currentUser.username}`) || (msg.isAdminUser && msg.text.includes('@todos')))) {
+                    isMentioned = true;
+                }
+
+                                const div = document.createElement('div');
+                const isMine = msg.username === currentUser.username;
+                div.className = isGrouped ? 'message grouped' : 'message';
+                if (isMine) div.classList.add('mine');
+                if (isMentioned && !isMine) div.classList.add('message-mentioned');
+                div.setAttribute('data-id', msg.id);
+                div.setAttribute('data-user', msg.username);
+                div.setAttribute('data-text', msg.text || '');
+                div.setAttribute('data-avatar', msg.userAvatar || '🔥');
+                
+                div.innerHTML = `
+                    <div style="display:flex; flex-direction:column; width:100%; pointer-events: none; position: relative;">
+                        ${replyHTML}
+                        <div class="message-inner-wrapper" style="display:flex; gap: 15px; width:100%;">
+                            <div class="avatar-wrapper" style="pointer-events: auto;">
+                                <img src="${avatarSrc}" class="avatar user-avatar-click ${msg.adminFrame || ''}" data-username="${msg.username}" alt="Avatar" title="Ver perfil">
+                                <div class="status-dot" style="background-color: ${(Date.now() - (msg.lastOnline || msg.timestamp)) > 300000 ? '#747f8d' : '#4CAF50'};" title="${(Date.now() - (msg.lastOnline || msg.timestamp)) > 300000 ? 'Offline' : 'Online'}"></div>
+                            </div>
+
+                            <div class="message-content" style="pointer-events: auto; width: 100%;">
+                                <div class="message-header">
+                                    <strong style="color: ${msg.isAdminUser ? 'var(--terraria-gold)' : 'white'};">${msg.isAdminUser ? '🌀 ' + msg.username : msg.username}</strong>
+                                    <small>${date}</small> 
+                                    ${!isGrouped ? editedTag : ''}
+                                    <button class="reply-btn" data-id="${msg.id}" data-user="${msg.username}" data-text="${(msg.text || 'Anexo').replace(/"/g, '&quot;')}" data-avatar="${msg.userAvatar || '🔥'}"><i class='bx bx-reply'></i></button>
+                                </div>
+                                <div class="message-body">
+                                    ${formatText}
+                                    ${fileHTML}
+                                    ${isGrouped ? editedTag : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                els.msgContainer.appendChild(div);
+                
+                lastMsg = msg; // Guarda a mensagem atual para checar a próxima
             });
 
-            peer.on('error', (err) => {
-                log(`ERRO: ${err.type} - ${err.message}`, "warn");
-                if(err.type === 'unavailable-id') {
-                    btnStart.disabled = false;
-                    customCodeInput.disabled = false;
-                }
-            });
+            // Dá um tempinho pro teclado processar o fechamento e desce suavemente
+            setTimeout(() => {
+                els.msgContainer.scrollTo({
+                    top: els.msgContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 150);
+        }
+
+        // O pulo do gato: força o chat pro final sempre que o teclado abrir ou fechar
+        window.addEventListener('resize', () => {
+            if (els.chatScreen.classList.contains('active')) {
+                els.msgContainer.scrollTop = els.msgContainer.scrollHeight;
+            }
         });
 
-        // Loop de Atualização do Servidor (Roda a 20 ticks por segundo, igual ao jogo original)
-        function startHostLoop() {
-            if(hostLoop) clearInterval(hostLoop);
-            
-            hostLoop = setInterval(() => {
-                // Insere o Bot na lista de jogadores para que ele apareça no mapa dos outros
-                otherPlayers['HOST'] = botPlayer;
 
-                // Monta o pacote de host
-                let hostPayload = {
-                    type: 'host_update', 
-                    players: otherPlayers,
-                    zombies: [], // O bot deixa a cargo do jogo local do jogador gerar os zumbis
-                    drops: [],
-                    shots: []
+        // Lógica de Ativar Resposta (Reply)
+        els.msgContainer.addEventListener('click', (e) => {
+            const replyBtn = e.target.closest('.reply-btn');
+            if(replyBtn) {
+                currentReply = {
+                    id: replyBtn.getAttribute('data-id'),
+                    username: replyBtn.getAttribute('data-user'),
+                    text: replyBtn.getAttribute('data-text'),
+                    avatar: replyBtn.getAttribute('data-avatar')
                 };
+                els.replyBar.classList.add('active');
+                els.replyToUser.textContent = currentReply.username;
+                els.msgInput.focus();
+            }
+        });
 
-                // Dispara para todos os conectados
-                peerConnections.forEach(c => {
-                    if(c.open) c.send(hostPayload);
-                });
-            }, 50);
+        els.closeReplyBtn.addEventListener('click', () => {
+            currentReply = null;
+            currentEdit = null;
+            els.replyBar.classList.remove('active');
+            els.msgInput.value = '';
+            els.msgInput.parentElement.classList.remove('editing-pulse');
+        });
+
+
+        // Delegação de evento: Lightbox e Visualização de Perfil
+        els.msgContainer.addEventListener('click', async (e) => {
+            // Lightbox para imagens enviadas no chat
+            if(e.target.classList.contains('chat-img')) {
+                const modal = document.getElementById('lightbox-modal');
+                const img = document.getElementById('lightbox-img');
+                img.src = e.target.getAttribute('data-full');
+                modal.classList.add('active');
+            }
+            
+                // Visualizar Perfil ao clicar no avatar do usuário
+            if(e.target.classList.contains('user-avatar-click')) {
+                const username = e.target.getAttribute('data-username');
+                if(!username) return;
+
+                els.viewProfileUsername.textContent = 'Carregando...';
+                els.viewProfileDesc.textContent = 'Buscando informações...';
+                els.viewProfileAvatar.src = e.target.src; 
+                els.viewProfileModal.classList.add('active');
+
+                try {
+                    const userRef = doc(db, "users", username);
+                    const docSnap = await getDoc(userRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        
+                        // Verifica status de Admin
+                        let adminBadge = data.isAdmin ? `<span style="font-size: 0.8rem; color: var(--terraria-gold); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; vertical-align: middle;">Admin</span>` : '';
+                        
+                        // Pega a classe do jogador
+                        let userClass = data.terrariaClass ? `<span style="font-size: 0.9rem; color: var(--accent-color); vertical-align: middle;">(${data.terrariaClass})</span>` : '';
+                        
+                        els.viewProfileUsername.innerHTML = `${data.isAdmin ? '🌀 ' : ''}${data.username} ${userClass} ${adminBadge}`;
+                        
+                        els.viewProfileDesc.textContent = data.desc || 'Sem descrição definida.';
+                        
+                        // FIX: Limpa de verdade TODO e qualquer vestígio de perfis anteriores
+                        els.viewProfileBanner.className = 'profile-banner';
+                        els.viewProfileAvatar.className = ''; 
+                        
+                        // Restaura apenas o que esse usuário específico tem (Seja VIP, Admin ou Loja)
+                        if (data.adminBg) {
+                            els.viewProfileBanner.classList.add(data.adminBg);
+                        }
+                        
+                        if (data.adminFrame) {
+                            els.viewProfileAvatar.classList.add(data.adminFrame);
+                        }
+                        els.viewProfileBanner.style.backgroundColor = data.bannerColor || '#5c6bc0';
+                        
+                        // Renderiza Wishlist
+                        const wishlistContainer = document.getElementById('view-profile-wishlist');
+                        wishlistContainer.innerHTML = '';
+                        if (data.wishlist) {
+                            data.wishlist.split(',').forEach(item => {
+                                if(item.trim()) wishlistContainer.innerHTML += `<span class="wishlist-tag">${item.trim()}</span>`;
+                            });
+                        } else {
+                            wishlistContainer.innerHTML = '<span style="color:var(--text-muted); font-size:0.8rem;">Nada na lista ainda.</span>';
+                        }
+
+                        // Detecta ausência (5 minutos de inatividade) para colocar bolinha cinza
+                        const isOffline = (Date.now() - (data.lastOnline || 0)) > 300000;
+                        els.viewProfileStatus.style.backgroundColor = isOffline ? '#747f8d' : '#4CAF50';
+                        
+                        // Renderiza corretamente o Emoji SVG dentro da Imagem do perfil
+                        let profileAvatar = data.avatar;
+                        if(profileAvatar && profileAvatar.length < 10) profileAvatar = getEmojiSvg(profileAvatar);
+                        else if(!profileAvatar) profileAvatar = getEmojiSvg('🔥');
+
+                        els.viewProfileAvatar.src = profileAvatar;
+                        
+                                     // Lógica de Botões de Admin (Moedas e Banir)
+                        const delBtn = document.getElementById('admin-delete-account-btn');
+                        const moneyBtn = document.getElementById('admin-give-money-btn');
+                        
+                        if (currentUser.isAdmin) {
+                            // Botão de Moedas (O Admin pode dar pra si mesmo)
+                            moneyBtn.style.display = 'block';
+                            moneyBtn.onclick = async () => {
+                                let amount = prompt(`Quantas StarCoins deseja depositar para ${data.username}?`);
+                                if (amount !== null && amount.trim() !== "") {
+                                    amount = parseInt(amount);
+                                    if (!isNaN(amount)) {
+                                        const newPoints = (data.points || 0) + amount;
+                                        await setDoc(doc(db, "users", data.username), { points: newPoints }, { merge: true });
+                                        alert(`💰 Sucesso! Adicionado ${amount} StarCoins na conta de ${data.username}.`);
+                                        
+                                        // Se o admin deu dinheiro pra si mesmo, atualiza na barra lateral na mesma hora
+                                        if (data.username === currentUser.username) {
+                                            currentUser.points = newPoints;
+                                            updateSidebar();
+                                        }
+                                        els.viewProfileModal.classList.remove('active');
+                                    } else {
+                                        alert("Valor inválido.");
+                                    }
+                                }
+                            };
+
+                            // Botão de Banir (O Admin NÃO PODE banir a si mesmo)
+                            if (data.username !== currentUser.username) {
+                                delBtn.style.display = 'block';
+                                delBtn.onclick = async () => {
+                                    if(confirm(`🚨 AVISO DE ADMIN:\nTem certeza que deseja BANIR e apagar a conta de ${data.username} do servidor?`)) {
+                                        await deleteDoc(doc(db, "users", data.username));
+                                        els.viewProfileModal.classList.remove('active');
+                                        alert(`A conta de ${data.username} foi aniquilada.`);
+                                    }
+                                };
+                            } else {
+                                delBtn.style.display = 'none';
+                            }
+                        } else {
+                            delBtn.style.display = 'none';
+                            moneyBtn.style.display = 'none';
+                        }
+
+                    } else {
+                        els.viewProfileUsername.textContent = username;
+                        els.viewProfileDesc.textContent = 'Usuário não encontrado no sistema.';
+                        document.getElementById('admin-delete-account-btn').style.display = 'none';
+                        document.getElementById('admin-give-money-btn').style.display = 'none';
+                    }
+
+                } catch (error) {
+                    els.viewProfileUsername.textContent = 'Erro';
+                    els.viewProfileDesc.textContent = 'Não foi possível carregar o perfil.';
+                }
+            }
+
+        });
+
+        // Fechar modal de visualização de perfil
+        els.closeViewProfile.addEventListener('click', () => els.viewProfileModal.classList.remove('active'));
+        els.viewProfileModal.addEventListener('click', (e) => {
+            if(e.target === els.viewProfileModal) els.viewProfileModal.classList.remove('active');
+        });
+
+        document.getElementById('lightbox-modal').addEventListener('click', (e) => {
+            if(e.target.id === 'lightbox-modal' || e.target.id === 'close-lightbox') {
+                document.getElementById('lightbox-modal').classList.remove('active');
+            }
+        });
+
+        // --- EVENTOS MOBILE: LONG PRESS & SWIPE ---
+        let touchTimer;
+        let touchStartX = 0;
+        let activeMessageEl = null;
+
+        els.msgContainer.addEventListener('touchstart', (e) => {
+            const msgEl = e.target.closest('.message');
+            if(!msgEl) return;
+            activeMessageEl = msgEl;
+            touchStartX = e.changedTouches[0].screenX;
+
+            // Ativa o Menu ao segurar a mensagem
+            touchTimer = setTimeout(() => {
+                abrirMenuContexto(msgEl);
+            }, 500); 
+        }, {passive: true});
+
+        els.msgContainer.addEventListener('touchmove', () => { clearTimeout(touchTimer); }, {passive: true});
+        
+        els.msgContainer.addEventListener('touchend', (e) => {
+            clearTimeout(touchTimer);
+            if(!activeMessageEl) return;
+            
+            let swipeDist = e.changedTouches[0].screenX - touchStartX;
+
+            // Arrastar para a direita para Editar
+            if (swipeDist > 70 && activeMessageEl.getAttribute('data-user') === currentUser.username) {
+                iniciarEdicao(activeMessageEl);
+            }
+        });
+
+        // Evento para PC: Botão Direito do Mouse para Menu de Contexto (Apagar/Editar)
+        els.msgContainer.addEventListener('contextmenu', (e) => {
+            const msgEl = e.target.closest('.message');
+            if(!msgEl) return;
+            e.preventDefault(); // Evita o menu do navegador de abrir
+            abrirMenuContexto(msgEl);
+        });
+
+        function abrirMenuContexto(msgEl) {
+            const isMine = msgEl.getAttribute('data-user') === currentUser.username;
+            currentReply = {
+                id: msgEl.getAttribute('data-id'),
+                username: msgEl.getAttribute('data-user'),
+                text: msgEl.getAttribute('data-text'),
+                avatar: msgEl.getAttribute('data-avatar')
+            };
+
+            els.ctxEdit.style.display = isMine ? 'flex' : 'none';
+            // Admins podem deletar QUALQUER mensagem do chat
+            els.ctxDelete.style.display = (isMine || currentUser.isAdmin) ? 'flex' : 'none';
+            els.ctxOverlay.classList.add('active');
+            
+            if(navigator.vibrate) navigator.vibrate(50); // Feedback tátil
         }
+
+        // Ações do Menu Mobile
+        els.ctxCancel.addEventListener('click', () => els.ctxOverlay.classList.remove('active'));
+        
+        els.ctxCopy.addEventListener('click', async () => {
+            els.ctxOverlay.classList.remove('active');
+            try {
+                await navigator.clipboard.writeText(currentReply.text);
+            } catch (err) {
+                alert("Não foi possível copiar a mensagem.");
+            }
+        });
+
+        els.ctxReply.addEventListener('click', () => {
+            els.ctxOverlay.classList.remove('active');
+            els.replyBar.classList.add('active');
+            els.replyToUser.textContent = currentReply.username;
+            els.msgInput.focus();
+        });
+        els.ctxEdit.addEventListener('click', () => {
+            els.ctxOverlay.classList.remove('active');
+            if(activeMessageEl) iniciarEdicao(activeMessageEl);
+        });
+        els.ctxDelete.addEventListener('click', async () => {
+            els.ctxOverlay.classList.remove('active');
+            if(confirm("Tem certeza que deseja apagar esta mensagem?")) {
+                const colName = currentChannel === 'geral' ? 'messages' : `messages_${currentChannel}`;
+                await deleteDoc(doc(db, colName, currentReply.id));
+            }
+        });
+
+        function iniciarEdicao(msgEl) {
+            currentEdit = { id: msgEl.getAttribute('data-id') };
+            els.msgInput.value = msgEl.getAttribute('data-text');
+            els.replyBar.classList.add('active');
+            els.replyToUser.innerHTML = "Editando... <span style='color:var(--terraria-gold);'>[Modo Edição]</span>";
+            els.msgInput.focus();
+            
+            els.msgInput.parentElement.classList.add('editing-pulse');
+        }
+             // Espaço reservado para a futura integração de disparo nativo do Firebase FCM
+
+
+        async function sendMessage(text = '', fileUrl = '', fileType = '') {
+            if (!text && !fileUrl) return;
+            els.msgInput.value = '';
+
+            // Comando Secreto para Virar Admin
+            if (text.trim() === '/admin') {
+                currentUser.isAdmin = true;
+                localStorage.setItem('chat_admin', 'true');
+                setDoc(doc(db, "users", currentUser.username), { isAdmin: true }, { merge: true });
+                alert("Você agora é um 🌀 Admin!");
+                updateChannelView();
+                return;
+            }
+            
+            // Comando Secreto VIP
+            if (text.trim() === '/vip') {
+                currentUser.isVip = true;
+                localStorage.setItem('chat_vip', 'true');
+                setDoc(doc(db, "users", currentUser.username), { isVip: true }, { merge: true });
+                alert("💎 Você agora é um VIP! Aproveite os visuais de ostentação, mas respeite os Admins.");
+                updateSidebar();
+                return;
+            }
+
+            // Comando Admin para Dar Moedas
+            if (text.startsWith('/darmoedas ') && currentUser.isAdmin) {
+                const parts = text.split(' ');
+                if (parts.length === 3) {
+                    const targetUser = parts[1];
+                    const amount = parseInt(parts[2]);
+                    if (!isNaN(amount)) {
+                        getDoc(doc(db, "users", targetUser)).then(snap => {
+                            if(snap.exists()) {
+                                const tData = snap.data();
+                                setDoc(doc(db, "users", targetUser), { points: (tData.points || 0) + amount }, { merge: true });
+                                alert(`💰 Sucesso! Você depositou ${amount} StarCoins na conta de ${targetUser}.`);
+                            } else {
+                                alert("Usuário não encontrado.");
+                            }
+                        });
+                    }
+                } else {
+                    alert("Uso correto: /darmoedas NomeDoUsuario Quantidade");
+                }
+                return;
+            }
+            
+            // Sistema de Pontos da Loja (5 moedas por mensagem!)
+            if(!currentEdit) {
+                currentUser.points = (currentUser.points || 0) + 5;
+                updateSidebar(); // Atualiza em tempo real pra ser satisfatório
+            }
+
+            // Trava de Segurança extra pro Banco de Dados
+            if (currentChannel === 'avisos' && !currentUser.isAdmin) {
+                alert("Apenas administradores podem enviar avisos.");
+                return;
+            }
+            
+            if (currentEdit) {
+                // Atualiza apenas o texto no Firebase
+                const colName = currentChannel === 'geral' ? 'messages' : `messages_${currentChannel}`;
+                await updateDoc(doc(db, colName, currentEdit.id), {
+                    text: text,
+                    isEdited: true
+                });
+                currentEdit = null;
+                els.replyBar.classList.remove('active');
+                els.msgInput.parentElement.classList.remove('editing-pulse');
+                return;
+            }
+
+            // Otimização: Atualiza o status online
+            currentUser.lastOnline = Date.now();
+            setDoc(doc(db, "users", currentUser.username), { lastOnline: currentUser.lastOnline }, { merge: true });
+
+            const messageData = {
+                username: currentUser.username,
+                userAvatar: currentUser.avatar,
+                statusColor: '#4CAF50',
+                lastOnline: currentUser.lastOnline,
+                text: text,
+                fileUrl: fileUrl,
+                fileType: fileType,
+                timestamp: Date.now(),
+                isEdited: false,
+                channel: currentChannel,
+                isAdminUser: currentUser.isAdmin || false,
+                adminFrame: currentUser.adminFrame || ''
+            };
+
+            // Injeta os dados da resposta se houver
+            if (currentReply && els.replyBar.classList.contains('active')) {
+                messageData.replyTo = currentReply;
+                
+                // Espaço para notificar resposta direta via Firebase no futuro
+
+                currentReply = null;
+                els.replyBar.classList.remove('active');
+            }
+
+            const colName = currentChannel === 'geral' ? 'messages' : `messages_${currentChannel}`;
+            await addDoc(collection(db, colName), { ...messageData });
+
+            enforceMessageLimit();
+            
+            // --- NOVA LÓGICA GERAL DE DISPARO DE NOTIFICAÇÕES (Preparando Firebase) ---
+            
+            // 1. Canal de Avisos (Admin) -> Manda pra todos os outros
+            if (currentChannel === 'avisos' && currentUser.isAdmin) {
+                // Gatilho FCM de Avisos entrará aqui
+            } 
+            // 2. Chat Geral -> Processa menções ou disparo geral
+            else {
+                // Mantemos apenas a gravação no banco de dados para o histórico do Firebase
+                if (text.includes('@')) {
+                    allKnownUsers.forEach(u => {
+                        if (text.includes(`@${u.username}`) && u.username !== currentUser.username) {
+                            setDoc(doc(db, "notifications", u.username), { from: currentUser.username, channel: currentChannel, text: text, time: Date.now() });
+                        }
+                    });
+
+                    // Se o Admin usou @todos
+                    if (currentUser.isAdmin && text.includes('@todos')) {
+                        setDoc(doc(db, "notifications", "todos"), { from: currentUser.username, channel: currentChannel, text: text, time: Date.now() });
+                    }
+                } 
+                else {
+                    // Gatilho FCM Geral entrará aqui
+                }
+            }
+        }
+
+
+        els.sendBtn.addEventListener('click', () => {
+            sendMessage(els.msgInput.value);
+            els.msgInput.style.height = 'auto'; // Reseta o tamanho após enviar
+            els.msgInput.focus(); // Mantém o campo focado (teclado aberto)
+        });
+
+        // --- SISTEMA DE MENÇÕES E AUTO-RESIZE ---
+        els.msgInput.addEventListener('input', (e) => {
+            els.msgInput.style.height = 'auto';
+            els.msgInput.style.height = (els.msgInput.scrollHeight) + 'px';
+
+            const val = els.msgInput.value;
+            const cursorPosition = els.msgInput.selectionStart;
+            const textBeforeCursor = val.slice(0, cursorPosition);
+            
+            // Detecta menção mesmo se o nome tiver espaços (até 20 letras)
+            const lastWordMatch = textBeforeCursor.match(/@([a-zA-Z0-9\s]{0,20})$/);
+
+            if (lastWordMatch) {
+                const searchName = lastWordMatch[1].toLowerCase();
+                
+                let filteredUsers = allKnownUsers.filter(u => u.username.toLowerCase().includes(searchName));
+                // Opção @todos se for administrador
+                if (currentUser.isAdmin && "todos".includes(searchName)) {
+                    filteredUsers.unshift({ username: "todos", avatar: "📢" });
+                }
+                
+                if (filteredUsers.length > 0) {
+                    els.mentionSuggestions.innerHTML = '';
+                    mentionIndex = -1; // Reseta seleção
+                    
+                    filteredUsers.forEach((u, index) => {
+                        let profileAvatar = u.avatar;
+                        if(profileAvatar && profileAvatar.length < 10) profileAvatar = getEmojiSvg(profileAvatar);
+                        else if(!profileAvatar) profileAvatar = getEmojiSvg('🔥');
+
+                        const div = document.createElement('div');
+                        div.className = 'mention-item';
+                        div.setAttribute('data-username', u.username);
+                        div.innerHTML = `<img src="${profileAvatar}"> <span>${u.username}</span>`;
+                        
+                        div.addEventListener('click', () => {
+                            insertMention(u.username, textBeforeCursor, val, cursorPosition, lastWordMatch[0].length);
+                        });
+                        
+                        els.mentionSuggestions.appendChild(div);
+                    });
+                    els.mentionSuggestions.classList.add('active');
+                } else {
+                    els.mentionSuggestions.classList.remove('active');
+                }
+            } else {
+                els.mentionSuggestions.classList.remove('active');
+            }
+        });
+
+        function updateMentionHighlight(items) {
+            items.forEach((item, i) => {
+                if (i === mentionIndex) item.classList.add('selected');
+                else item.classList.remove('selected');
+            });
+            if (mentionIndex >= 0) items[mentionIndex].scrollIntoView({ block: 'nearest' });
+        }
+
+        function insertMention(username, textBefore, fullText, cursorPos, matchLength) {
+            const textAfter = fullText.slice(cursorPos);
+            const replaceStart = textBefore.slice(0, -matchLength);
+            els.msgInput.value = replaceStart + '@' + username + ' ' + textAfter;
+            els.mentionSuggestions.classList.remove('active');
+            els.msgInput.focus();
+        }
+
+        els.msgInput.addEventListener('keydown', (e) => {
+            const isMentionActive = els.mentionSuggestions.classList.contains('active');
+            const items = document.querySelectorAll('.mention-item');
+
+            // Navegação com setas na caixa de menções
+            if (isMentionActive && items.length > 0) {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    mentionIndex = (mentionIndex + 1) % items.length;
+                    updateMentionHighlight(items);
+                    return;
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    mentionIndex = (mentionIndex - 1 + items.length) % items.length;
+                    updateMentionHighlight(items);
+                    return;
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (mentionIndex >= 0) items[mentionIndex].click();
+                    else items[0].click(); // Se der Enter sem escolher, pega o 1º da lista
+                    return;
+                }
+            }
+
+            // Envio Padrão
+            if (window.innerWidth <= 768) return; 
+
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); 
+                sendMessage(els.msgInput.value);
+                els.msgInput.style.height = 'auto'; 
+                els.mentionSuggestions.classList.remove('active');
+                els.msgInput.focus(); // Mantém o campo focado (teclado aberto)
+            }
+        });
+
+             // --- ENVIO DE IMAGEM POR URL DA INTERNET ---
+        els.imgUrlBtn.addEventListener('click', () => {
+            const url = prompt("Cole a URL de uma imagem da internet (ex: terminando em .png, .jpg):");
+            if (url && (url.startsWith("http://") || url.startsWith("https://"))) {
+                sendMessage(els.msgInput.value, url, "image/url");
+            } else if (url) {
+                alert("URL inválida! Precisa começar com http:// ou https://");
+            }
+        });
+
+        // Limita as mensagens com segurança (chamado só após enviar)
+      async function enforceMessageLimit() {
+            const colName = currentChannel === 'geral' ? 'messages' : `messages_${currentChannel}`;
+            
+            // Checa se o limite foi atingido baixando apenas 41 documentos, poupando a memória e a rede
+            const qCount = query(collection(db, colName), orderBy("timestamp", "desc"), limit(41));
+            const snapCount = await getDocs(qCount);
+
+            if (snapCount.size > 40) {
+                // Se passou do limite, puxa apenas as poucas mensagens mais velhas (ascendente) para apagar
+                const qOld = query(collection(db, colName), orderBy("timestamp", "asc"), limit(5));
+                const snapOld = await getDocs(qOld);
+                
+                snapOld.forEach((docSnap) => {
+                    deleteDoc(doc(db, colName, docSnap.id));
+                });
+            }
+        }
+        // --- SISTEMA EM TEMPO REAL: LISTA DE MEMBROS ---
+        function listenToUsers() {
+            const q = query(collection(db, "users"));
+            onSnapshot(q, (snapshot) => {
+                allKnownUsers = [];
+                els.membersList.innerHTML = '';
+                
+                const now = Date.now();
+                const usersData = [];
+
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    usersData.push(data);
+                    allKnownUsers.push(data); // Salva para o sistema de Menções
+                });
+
+                // Ordena: Quem está Online fica no topo, seguido de ordem alfabética
+                usersData.sort((a, b) => {
+                    const aOnline = (now - (a.lastOnline || 0)) <= 300000; // 5 minutos pra ser considerado "Online"
+                    const bOnline = (now - (b.lastOnline || 0)) <= 300000;
+                    if (aOnline === bOnline) return a.username.localeCompare(b.username);
+                    return aOnline ? -1 : 1;
+                });
+
+                usersData.forEach(data => {
+                    const isOnline = (now - (data.lastOnline || 0)) <= 300000;
+                    let profileAvatar = data.avatar;
+                    if(profileAvatar && profileAvatar.length < 10) profileAvatar = getEmojiSvg(profileAvatar);
+                    else if(!profileAvatar) profileAvatar = getEmojiSvg('🔥');
+
+                    const div = document.createElement('div');
+                    div.className = `member-item ${isOnline ? 'online' : ''}`;
+                    
+                    div.innerHTML = `
+                        <div class="avatar-wrapper user-avatar-click" data-username="${data.username}">
+                            <img src="${profileAvatar}" class="user-avatar-click" data-username="${data.username}" alt="Avatar">
+                            <div class="status-dot" style="background-color: ${isOnline ? '#4CAF50' : '#747f8d'};"></div>
+                        </div>
+                        <div class="member-item-info user-avatar-click" data-username="${data.username}" style="width: 100%;">
+                            <span style="color: ${data.isAdmin ? 'var(--terraria-gold)' : 'white'};">${data.username}</span>
+                            <small>${data.desc ? data.desc : 'Disponível'}</small>
+                        </div>
+                    `;
+                    els.membersList.appendChild(div);
+                });
+            });
+        }
+
+        init();
+
     </script>
+    <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}</script>
 </body>
 </html>
+   
